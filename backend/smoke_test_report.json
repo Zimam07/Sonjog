@@ -1,0 +1,70 @@
+{
+  "timestamp": "2025-11-17T12:13:57.797Z",
+  "summary": {
+    "passed": 1,
+    "failed": 11,
+    "total": 12
+  },
+  "tests": [
+    {
+      "name": "Backend is reachable on :8000",
+      "status": "FAIL",
+      "error": "Backend not responding (status: undefined)"
+    },
+    {
+      "name": "Register new user",
+      "status": "FAIL",
+      "error": "Register failed (status: undefined)"
+    },
+    {
+      "name": "Login user and capture auth cookie",
+      "status": "FAIL",
+      "error": "Login failed (status: undefined)"
+    },
+    {
+      "name": "Fetch user profile with auth",
+      "status": "FAIL",
+      "error": "Profile fetch returned status: undefined"
+    },
+    {
+      "name": "Get all stories (may be empty initially)",
+      "status": "FAIL",
+      "error": "Stories fetch returned status: undefined"
+    },
+    {
+      "name": "Get all reels (may be empty initially)",
+      "status": "FAIL",
+      "error": "Reels fetch returned status: undefined"
+    },
+    {
+      "name": "Create post endpoint is reachable",
+      "status": "FAIL",
+      "error": "Create post returned unexpected status: undefined"
+    },
+    {
+      "name": "Get all posts feed",
+      "status": "FAIL",
+      "error": "Posts fetch returned status: undefined"
+    },
+    {
+      "name": "Get conversations list endpoint is reachable",
+      "status": "FAIL",
+      "error": "Conversations fetch returned: undefined"
+    },
+    {
+      "name": "Get notifications endpoint is reachable",
+      "status": "FAIL",
+      "error": "Notifications fetch returned: undefined"
+    },
+    {
+      "name": "Search posts by query",
+      "status": "FAIL",
+      "error": "Search returned: undefined"
+    },
+    {
+      "name": "Frontend is reachable on :5173",
+      "status": "PASS",
+      "error": null
+    }
+  ]
+}

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(30, 30, 46, 0.9);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+        }
+        
+        .test-section:last-child {
+            border-bottom: none;
+        }
+        
+        h2 {
+            color: #a78bfa;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+        
+        .test-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 10px 0;
+            padding: 12px;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 6px;
+        }
+        
+        .status-icon {
+            font-size: 1.2em;
+            min-width: 24px;
+        }
+        
+        .status-icon.loading {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .status-text {
+            flex: 1;
+        }
+        
+        .status-ok { color: #10b981; }
+        .status-error { color: #ef4444; }
+        .status-loading { color: #f59e0b; }
+        .status-warning { color: #f59e0b; }
+        
+        button {
+            background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(139, 92, 246, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 3px solid #8b5cf6;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Frontend Debug Console</h1>
+        
+        <div class="test-section">
+            <h2>Backend Connectivity</h2>
+            <div id="backend-test" class="test-item">
+                <span class="status-icon loading">⏳</span>
+                <span class="status-text status-loading">Testing...</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>React App Status</h2>
+            <div id="react-test" class="test-item">
+                <span class="status-icon loading">⏳</span>
+                <span class="status-text status-loading">Checking...</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>localStorage & Redux Persist</h2>
+            <div id="storage-test" class="test-item">
+                <span class="status-icon loading">⏳</span>
+                <span class="status-text status-loading">Checking...</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Actions</h2>
+            <button onclick="location.href = 'http://127.0.0.1:5173/'">Go to App</button>
+            <button onclick="clearStorage()">Clear localStorage</button>
+            <button onclick="reloadPage()">Reload Page</button>
+            <button onclick="openConsole()">Open DevTools (F12)</button>
+        </div>
+        
+        <div class="test-section" id="env-info" style="display:none;">
+            <h2>Environment Info</h2>
+            <div class="code-block" id="env-content"></div>
+        </div>
+    </div>
+
+    <script>
+        async function runTests() {
+            // Test 1: Backend
+            try {
+                const response = await fetch('http://localhost:8000/');
+                if (response.ok) {
+                    updateTest('backend-test', '✅', 'Backend is running', 'status-ok');
+                } else {
+                    updateTest('backend-test', '❌', 'Backend not responding properly', 'status-error');
+                }
+            } catch (error) {
+                updateTest('backend-test', '❌', `Backend error: ${error.message}`, 'status-error');
+            }
+            
+            // Test 2: React
+            const rootElement = document.getElementById('root');
+            if (rootElement && rootElement.children.length > 0) {
+                updateTest('react-test', '✅', 'React app is loaded', 'status-ok');
+            } else if (rootElement) {
+                updateTest('react-test', '⚠️', 'Root element exists but app not mounted yet', 'status-warning');
+            } else {
+                updateTest('react-test', '❌', 'Root element not found', 'status-error');
+            }
+            
+            // Test 3: localStorage
+            try {
+                const persistedData = localStorage.getItem('persist:root');
+                if (persistedData) {
+                    const parsed = JSON.parse(persistedData);
+                    const auth = parsed.auth ? JSON.parse(parsed.auth) : null;
+                    if (auth && auth.user) {
+                        updateTest('storage-test', '✅', `Persisted user: ${auth.user.username}`, 'status-ok');
+                    } else {
+                        updateTest('storage-test', '⚠️', 'localStorage exists but no user logged in', 'status-warning');
+                    }
+                } else {
+                    updateTest('storage-test', '⚠️', 'No persisted data (first visit or cleared)', 'status-warning');
+                }
+            } catch (error) {
+                updateTest('storage-test', '❌', `Storage error: ${error.message}`, 'status-error');
+            }
+            
+            // Show environment info
+            document.getElementById('env-info').style.display = 'block';
+            document.getElementById('env-content').textContent = JSON.stringify({
+                url: window.location.href,
+                userAgent: navigator.userAgent,
+                localStorage: localStorage.length + ' items',
+                sessionStorage: sessionStorage.length + ' items'
+            }, null, 2);
+        }
+        
+        function updateTest(id, icon, text, className) {
+            const element = document.getElementById(id);
+            element.innerHTML = `
+                <span class="status-icon">${icon}</span>
+                <span class="status-text ${className}">${text}</span>
+            `;
+        }
+        
+        function clearStorage() {
+            if (confirm('Clear localStorage? You will be logged out.')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                alert('Cleared! Refreshing...');
+                location.reload();
+            }
+        }
+        
+        function reloadPage() {
+            location.reload();
+        }
+        
+        function openConsole() {
+            alert('Press F12 or right-click → Inspect to open DevTools');
+        }
+        
+        // Run tests immediately and every 2 seconds
+        runTests();
+        setInterval(runTests, 2000);
+        
+        // Also log some info to console
+        console.log('%c🚀 Frontend Debug Info', 'font-size: 16px; color: #8b5cf6; font-weight: bold;');
+        console.log('Current URL:', window.location.href);
+        console.log('localStorage keys:', Object.keys(localStorage));
+        console.log('sessionStorage keys:', Object.keys(sessionStorage));
+    </script>
+</body>
+</html>
