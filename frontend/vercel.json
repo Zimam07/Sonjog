@@ -2,7 +2,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "devCommand": "npm run dev",
-  "installCommand": "npm install --no-optional --legacy-peer-deps",
   "env": {
     "VITE_API_URL": "https://sonjog.onrender.com/api/v1",
     "VITE_SOCKET_URL": "https://sonjog.onrender.com"
