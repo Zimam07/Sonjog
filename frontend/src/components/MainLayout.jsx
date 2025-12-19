@@ -250,7 +250,7 @@ export default function MainLayout() {
                     onClick={async () => {
                       if (confirm('Are you sure you want to delete your account? This cannot be undone.')) {
                         try {
-                          const response = await fetch('http://localhost:8000/api/v1/user/delete-account', {
+                          const response = await fetch(`${API_URL}/user/delete-account`, {
                             method: 'POST',
                             credentials: 'include',
                             headers: {
