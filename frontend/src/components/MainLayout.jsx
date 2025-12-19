@@ -141,10 +141,10 @@ export default function MainLayout() {
                   e.preventDefault();
                   navigate(item.href);
                 }}
-                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition duration-200 ${isActive ? 'bg-gradient-to-r from-sky-600/30 to-cyan-600/20 text-gray-900 dark:text-white border-l-4 border-sky-500' : 'text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-sky-600/20 hover:to-cyan-600/20 hover:text-sky-600 dark:hover:text-sky-300'}`}
+                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition duration-200 h-14 ${isActive ? 'bg-gradient-to-r from-sky-600/30 to-cyan-600/20 text-gray-900 dark:text-white border-l-4 border-sky-500' : 'text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-sky-600/20 hover:to-cyan-600/20 hover:text-sky-600 dark:hover:text-sky-300'}`}
               >
-                <item.icon size={24} />
-                <span className="text-lg font-medium">{item.label}</span>
+                <item.icon size={24} className="flex-shrink-0" />
+                <span className="text-lg font-medium whitespace-nowrap">{item.label}</span>
               </a>
             );
           })}
