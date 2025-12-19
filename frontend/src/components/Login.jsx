@@ -69,6 +69,11 @@ export default function Login() {
           <p className="text-sm text-gray-500">Sign in to continue to your account</p>
         </div>
 
+        {/* Info banner for new users */}
+        <div className="mb-5 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-xs text-blue-800"><strong>New user?</strong> You must sign up first with a BRACU email (@bracu.ac.bd or @g.bracu.ac.bd)</p>
+        </div>
+
         <form onSubmit={loginHandler} className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>

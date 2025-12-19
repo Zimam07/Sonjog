@@ -63,35 +63,13 @@ export default function Signup() {
         throw new Error(registerRes.data?.message || 'Registration failed');
       }
       toast.success(registerRes.data.message || 'Account created');
+      // Redirect to login page after successful signup
+      navigate('/login');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Signup failed');
       console.log(err);
       setLoading(false);
       return;
-    }
-
-    // Step 2: Auto-login (best effort). If this fails, show explicit message.
-    try {
-      const loginRes = await axios.post(
-        `${USER_API}/login`,
-        { email: lowerEmail, password: input.password },
-        {
-          headers: { 'Content-Type': 'application/json' },
-          withCredentials: true,
-        }
-      );
-      if (loginRes.data?.success) {
-        dispatch(setAuthUser(loginRes.data.user));
-        navigate('/');
-        toast.success(loginRes.data.message || 'Logged in');
-      } else {
-        toast.error('Account created, but auto‑login failed. Please log in.');
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Account created, but auto‑login failed. Please log in.');
-      console.log(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -115,6 +93,7 @@ export default function Signup() {
               className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-300"
               disabled={loading}
             />
+            <p className="text-xs text-gray-500 mt-1">Required field</p>
           </div>
 
           <div>
@@ -122,12 +101,13 @@ export default function Signup() {
             <input
               type="email"
               name="email"
-              placeholder="you@example.com"
+              placeholder="you@g.bracu.ac.bd or you@bracu.ac.bd"
               value={input.email}
               onChange={changeEventHandler}
               className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-300"
               disabled={loading}
             />
+            <p className="text-xs text-red-600 mt-1">⚠️ Must end with @bracu.ac.bd or @g.bracu.ac.bd</p>
           </div>
 
           <div>
@@ -141,6 +121,7 @@ export default function Signup() {
               className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-300"
               disabled={loading}
             />
+            <p className="text-xs text-gray-500 mt-1">Minimum 5 characters</p>
           </div>
 
           <button
