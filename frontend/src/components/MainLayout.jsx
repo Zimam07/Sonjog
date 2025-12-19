@@ -178,35 +178,35 @@ export default function MainLayout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <div className="border-b border-blue-200 p-4 flex items-center justify-between" style={{backgroundImage: 'linear-gradient(to right, #dbeafe 0%, #ffffff 100%)'}}>
+        <div className="border-b border-blue-200 p-4 flex items-center justify-between h-20" style={{backgroundImage: 'linear-gradient(to right, #dbeafe 0%, #ffffff 100%)'}}>
           <button onClick={() => navigate('/')} className="flex items-center gap-3">
             <h1 className="text-xl font-bold text-blue-900">Sonjog</h1>
           </button>
 
-          <div className="flex items-center gap-4">
-              <div className="h-10 w-10 flex items-center justify-center rounded-full border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100">
+          <div className="flex items-center gap-3 h-12">
+              <div className="h-full w-12 flex items-center justify-center rounded-full border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100">
                 <Notifications />
               </div>
               <button
                 onClick={() => dispatch(toggleTheme())}
                 title="Toggle theme"
-                className="h-10 w-10 flex items-center justify-center rounded-full border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                className="h-full w-12 flex items-center justify-center rounded-full border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100"
               >
                 {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
               </button>
-              <button onClick={() => navigate('/chat')} className="h-10 w-10 flex items-center justify-center rounded-full border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100">
+              <button onClick={() => navigate('/chat')} className="h-full w-12 flex items-center justify-center rounded-full border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100">
                 <Send size={20} />
               </button>
               {/* Mobile menu toggle */}
-              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden h-10 w-10 flex items-center justify-center rounded-full border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100">
+              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden h-full w-12 flex items-center justify-center rounded-full border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100">
                 {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
-            <div className="hidden md:block relative">
+            <div className="hidden md:block relative h-full flex items-center">
               <button 
                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                className="relative"
+                className="relative h-full flex items-center"
               >
-                <img src={user?.profilePicture || 'https://via.placeholder.com/40'} alt={user?.username} className="w-8 h-8 rounded-full border-2 border-blue-400 cursor-pointer hover:border-blue-500" />
+                <img src={user?.profilePicture || 'https://via.placeholder.com/40'} alt={user?.username} className="w-10 h-10 rounded-full border-2 border-blue-400 cursor-pointer hover:border-blue-500" />
               </button>
               
               {/* Profile Dropdown Menu */}
