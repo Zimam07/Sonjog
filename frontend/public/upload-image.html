@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Building Image</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        input { padding: 10px; margin: 10px 0; }
+        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        #status { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>Upload Building Image</h2>
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="saveImage()">Save as login-bg.jpg</button>
+    <div id="status"></div>
+
+    <script>
+        async function saveImage() {
+            const file = document.getElementById('imageInput').files[0];
+            if (!file) {
+                alert('Please select an image file');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64 = e.target.result.split(',')[1];
+                try {
+                    const response = await fetch('/api/upload-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: base64, filename: 'login-bg.jpg' })
+                    });
+                    
+                    if (response.ok) {
+                        document.getElementById('status').textContent = '✓ Image uploaded successfully!';
+                    }
+                } catch (err) {
+                    document.getElementById('status').textContent = '✗ Upload failed: ' + err.message;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>

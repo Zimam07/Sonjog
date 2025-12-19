@@ -3,15 +3,22 @@ import nodemailer from 'nodemailer';
 import { sendVerificationEmail } from '../utils/email.js';
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { Post } from "../models/post.model.js";
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../utils/cloudinary.js";
-import { Post } from "../models/post.model.js";
 export const register = async (req, res) => {
     try {
         const { username, email, password } = req.body;
         if (!username || !email || !password) {
             return res.status(401).json({
                 message: "Something is missing, please check!",
+                success: false,
+            });
+        }
+        // Enforce minimum password length
+        if (String(password).length < 5) {
+            return res.status(400).json({
+                message: 'Password must be at least 5 characters long',
                 success: false,
             });
         }
@@ -168,7 +175,71 @@ export const logout = async (_, res) => {
 export const getProfile = async (req, res) => {
     try {
         const userId = req.params.id;
-        let user = await User.findById(userId).populate({path:'posts', createdAt:-1}).populate('bookmarks');
+        const currentUserId = req.id;
+
+        let user = await User.findById(userId)
+            .select('-password')
+            .populate({
+                path: 'posts',
+                options: { sort: { createdAt: -1 } },
+                populate: [
+                    { path: 'author', select: 'username profilePicture' },
+                    { path: 'comments', populate: { path: 'author', select: 'username profilePicture' } },
+                ],
+            })
+            .populate({
+                path: 'followers',
+                select: 'username profilePicture',
+            })
+            .populate({
+                path: 'following',
+                select: 'username profilePicture',
+            })
+            .populate('bookmarks')
+            .lean();
+
+        // Fallback: if posts are not embedded on the user document, fetch directly from Post collection
+        // This fixes profiles that show "No posts" when the posts array is empty or out of sync.
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        if (!user.posts || user.posts.length === 0) {
+            const posts = await Post.find({ author: userId })
+                .sort({ createdAt: -1 })
+                .populate({ path: 'comments', populate: { path: 'author', select: 'username profilePicture' } })
+                .populate({ path: 'author', select: 'username profilePicture' })
+                .lean();
+            user.posts = posts;
+        }
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Check privacy settings
+        const isOwnProfile = String(userId) === String(currentUserId);
+        const isFollower = user.followers?.some(f => String(f._id || f) === String(currentUserId));
+
+        if (!isOwnProfile && user.privacy === 'private' && !isFollower) {
+            // Return limited profile info for private accounts that user doesn't follow
+            return res.status(200).json({
+                user: {
+                    _id: user._id,
+                    username: user.username,
+                    profilePicture: user.profilePicture,
+                    bio: user.bio,
+                    gender: user.gender,
+                    privacy: user.privacy,
+                    followers: [],
+                    following: [],
+                    posts: [],
+                    isPrivateAndNotFollower: true
+                },
+                success: true
+            });
+        }
+
         return res.status(200).json({
             user,
             success: true
@@ -182,7 +253,7 @@ export const getProfile = async (req, res) => {
 export const editProfile = async (req, res) => {
     try {
         const userId = req.id;
-        const { bio, gender } = req.body;
+        const { bio, gender, privacy } = req.body;
         const profilePicture = req.file;
         let cloudResponse;
 
@@ -201,6 +272,7 @@ export const editProfile = async (req, res) => {
     if (bio) user.bio = bio;
     // normalize gender server-side to avoid enum validation issues
     if (gender) user.gender = String(gender).toLowerCase();
+    if (privacy && ['public', 'private'].includes(privacy)) user.privacy = privacy;
         if (profilePicture) user.profilePicture = cloudResponse.secure_url;
 
         await user.save();
@@ -312,27 +384,304 @@ export const followOrUnfollow = async (req, res) => {
             ])
             return res.status(200).json({ message: 'Unfollowed successfully', success: true });
         } else {
-            // follow
-            await Promise.all([
-                User.updateOne({ _id: Je_follow_korbe }, { $push: { following: jake_follow_korbe } }),
-                User.updateOne({ _id: jake_follow_korbe }, { $push: { followers: Je_follow_korbe } }),
-            ])
-            // persist a follow notification
-            try {
-                const { Notification } = await import('../models/notification.model.js');
-                await Notification.create({
-                    type: 'follow',
-                    user: jake_follow_korbe,
-                    fromUser: Je_follow_korbe,
-                    message: 'You have a new follower'
+            // Check if target user has private account
+            if (targetUser.privacy === 'private') {
+                // Check if follow request already exists
+                const { FollowRequest } = await import('../models/followRequest.model.js');
+                const existingRequest = await FollowRequest.findOne({
+                    from: Je_follow_korbe,
+                    to: jake_follow_korbe,
+                    status: 'pending'
                 });
-            } catch (e) {
-                console.log('Failed to persist follow notification', e);
+
+                if (existingRequest) {
+                    return res.status(400).json({
+                        message: 'Follow request already sent',
+                        success: false
+                    });
+                }
+
+                // Create follow request
+                await FollowRequest.create({
+                    from: Je_follow_korbe,
+                    to: jake_follow_korbe
+                });
+
+                return res.status(200).json({
+                    message: 'Follow request sent',
+                    success: true,
+                    isFollowRequest: true
+                });
+            } else {
+                // Public account - direct follow
+                await Promise.all([
+                    User.updateOne({ _id: Je_follow_korbe }, { $push: { following: jake_follow_korbe } }),
+                    User.updateOne({ _id: jake_follow_korbe }, { $push: { followers: Je_follow_korbe } }),
+                ])
+                // persist a follow notification
+                try {
+                    const { Notification } = await import('../models/notification.model.js');
+                    await Notification.create({
+                        type: 'follow',
+                        user: jake_follow_korbe,
+                        fromUser: Je_follow_korbe,
+                        message: 'You have a new follower'
+                    });
+                } catch (e) {
+                    console.log('Failed to persist follow notification', e);
+                }
+                return res.status(200).json({ message: 'followed successfully', success: true });
             }
-            return res.status(200).json({ message: 'followed successfully', success: true });
         }
     } catch (error) {
         console.log(error);
         return res.status(500).json({ success: false, message: error.message });
     }
-}
+};
+
+export const getMe = async (req, res) => {
+    try {
+        const userId = req.id;
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        return res.status(200).json({ success: true, user });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const getFollowRequests = async (req, res) => {
+    try {
+        const userId = req.id;
+        const { FollowRequest } = await import('../models/followRequest.model.js');
+        const requests = await FollowRequest.find({
+            to: userId,
+            status: 'pending'
+        }).populate('from', 'username profilePicture').sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            followRequests: requests
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const acceptFollowRequest = async (req, res) => {
+    try {
+        const userId = req.id;
+        const { requestId } = req.params;
+        const { FollowRequest } = await import('../models/followRequest.model.js');
+
+        const followRequest = await FollowRequest.findById(requestId);
+        if (!followRequest || followRequest.to.toString() !== userId) {
+            return res.status(404).json({
+                success: false,
+                message: 'Follow request not found'
+            });
+        }
+
+        if (followRequest.status !== 'pending') {
+            return res.status(400).json({
+                success: false,
+                message: 'Request is no longer pending'
+            });
+        }
+
+        // Update follow request status
+        followRequest.status = 'accepted';
+        await followRequest.save();
+
+        // Add to followers/following
+        const fromUserId = followRequest.from;
+        await Promise.all([
+            User.updateOne({ _id: fromUserId }, { $push: { following: userId } }),
+            User.updateOne({ _id: userId }, { $push: { followers: fromUserId } })
+        ]);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Follow request accepted'
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const rejectFollowRequest = async (req, res) => {
+    try {
+        const userId = req.id;
+        const { requestId } = req.params;
+        const { FollowRequest } = await import('../models/followRequest.model.js');
+
+        const followRequest = await FollowRequest.findById(requestId);
+        if (!followRequest || followRequest.to.toString() !== userId) {
+            return res.status(404).json({
+                success: false,
+                message: 'Follow request not found'
+            });
+        }
+
+        if (followRequest.status !== 'pending') {
+            return res.status(400).json({
+                success: false,
+                message: 'Request is no longer pending'
+            });
+        }
+
+        followRequest.status = 'rejected';
+        await followRequest.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Follow request rejected'
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const changeEmail = async (req, res) => {
+    try {
+        const userId = req.id;
+        const { newEmail, password } = req.body;
+
+        if (!newEmail || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide both new email and password'
+            });
+        }
+
+        // enforce same domain policy as registration unless ALLOW_ALL_EMAILS is set
+        const lowerEmail = String(newEmail).toLowerCase();
+        const allowAll = String(process.env.ALLOW_ALL_EMAILS || '').toLowerCase() === 'true';
+        if (!allowAll) {
+            const envList = process.env.ALLOWED_EMAIL_DOMAINS || '@bracu.ac.bd,@g.bracu.ac.bd';
+            const allowedDomains = envList.split(',').map(d => d.trim()).filter(Boolean);
+            const hasAllowedDomain = allowedDomains.some((d) => lowerEmail.endsWith(d));
+            if (!hasAllowedDomain) {
+                return res.status(400).json({
+                    message: 'Email change is restricted by domain policy. Use a permitted email address.',
+                    success: false,
+                });
+            }
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const isPasswordMatch = await bcrypt.compare(password, user.password);
+        if (!isPasswordMatch) {
+            return res.status(400).json({ success: false, message: 'Incorrect password' });
+        }
+
+        if (user.email === lowerEmail) {
+            return res.status(400).json({ success: false, message: 'New email cannot be the same as current email' });
+        }
+
+        const existing = await User.findOne({ email: lowerEmail });
+        if (existing && String(existing._id) !== String(userId)) {
+            return res.status(400).json({ success: false, message: 'Email is already in use' });
+        }
+
+        user.email = lowerEmail;
+        // optionally require re-verification on email change
+        user.isVerified = false;
+        await user.save();
+
+        // send verification email to the new address (best-effort)
+        try {
+            const verifyToken = jwt.sign({ userId: user._id, purpose: 'verify' }, process.env.SECRET_KEY, { expiresIn: '1d' });
+            const verifyUrl = `${req.protocol}://${req.get('host')}/api/v1/user/verify?token=${verifyToken}`;
+            await sendVerificationEmail(user.email, user.username, verifyUrl);
+        } catch (e) {
+            console.log('Failed to send verification email after email change', e);
+        }
+
+        const safeUser = {
+            _id: user._id,
+            username: user.username,
+            email: user.email,
+            profilePicture: user.profilePicture,
+            bio: user.bio,
+            followers: user.followers,
+            following: user.following,
+            posts: user.posts,
+            isVerified: user.isVerified,
+        };
+
+        return res.status(200).json({
+            success: true,
+            message: 'Email changed. Please verify your new email.',
+            user: safeUser,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+export const changePassword = async (req, res) => {
+    try {
+        const userId = req.id;
+        const { oldPassword, newPassword } = req.body;
+
+        if (!oldPassword || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide both old and new passwords'
+            });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Verify old password
+        const isPasswordMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isPasswordMatch) {
+            return res.status(400).json({
+                success: false,
+                message: 'Incorrect current password'
+            });
+        }
+
+        // Hash new password
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password
+        user.password = hashedNewPassword;
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Password changed successfully'
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};

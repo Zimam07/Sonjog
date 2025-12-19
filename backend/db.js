@@ -8,7 +8,7 @@ const connectDB = async () => {
         const uri = process.env.MONGO_URI || '';
         const isSrv = uri.startsWith('mongodb+srv');
         const connectOptions = {
-            serverSelectionTimeoutMS: 5000,
+            serverSelectionTimeoutMS: 30000,
         };
         if (isSrv) {
             connectOptions.tls = true;

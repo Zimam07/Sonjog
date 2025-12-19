@@ -1,0 +1,31 @@
+# Node modules
+backend/node_modules/
+frontend/node_modules/
+
+# Environment files and secrets
+backend/.env
+frontend/.env
+
+# Logs and debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary and build artifacts
+backend/tmp/
+backend/tmp/scheduled-uploads/
+frontend/test-results/
+frontend/playwright-artifacts/
+frontend/playwright-screenshots/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Coverage and cache
+coverage/
+.cache/
+
+# Local dev reports
+backend/smoke_test_report.json

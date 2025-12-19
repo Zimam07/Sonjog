@@ -18,6 +18,7 @@ export default function EditProfile() {
   const [input, setInput] = useState({
     bio: user?.bio || '',
     gender: user?.gender || '',
+    privacy: user?.privacy || 'public',
   });
 
   const changeEventHandler = (e) => {
@@ -46,6 +47,9 @@ export default function EditProfile() {
       if (input.gender) {
         formData.append('gender', input.gender);
       }
+      if (input.privacy) {
+        formData.append('privacy', input.privacy);
+      }
       if (profilePic) {
         formData.append('profilePicture', profilePic);
       }
@@ -71,16 +75,16 @@ export default function EditProfile() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto bg-white dark:bg-gray-900 min-h-screen">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6 p-4 border-b border-gray-700">
+      <div className="flex items-center gap-4 mb-6 p-4 border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
         <button
           onClick={() => navigate(`/profile/${user?._id}`)}
-          className="text-gray-400 hover:text-white"
+          className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
         >
           <ArrowLeft size={24} />
         </button>
-        <h2 className="text-xl font-bold text-white">Edit Profile</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Profile</h2>
       </div>
 
       {/* Form */}
@@ -108,7 +112,7 @@ export default function EditProfile() {
 
         {/* Bio */}
         <div>
-          <label className="block text-sm font-semibold text-white mb-2">
+          <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
             Bio
           </label>
           <textarea
@@ -118,7 +122,7 @@ export default function EditProfile() {
             placeholder="Tell us about yourself..."
             rows="4"
             maxLength={150}
-            className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+            className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={loading}
           />
           <p className="text-xs text-gray-400 mt-1">
@@ -128,14 +132,14 @@ export default function EditProfile() {
 
         {/* Gender */}
         <div>
-          <label className="block text-sm font-semibold text-white mb-2">
+          <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
             Gender
           </label>
           <select
             name="gender"
             value={input.gender}
             onChange={changeEventHandler}
-            className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded text-white focus:outline-none focus:border-blue-500"
+            className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={loading}
           >
             <option value="">Select Gender</option>
@@ -144,6 +148,45 @@ export default function EditProfile() {
             <option value="">Other</option>
             <option value="">Prefer not to say</option>
           </select>
+        </div>
+
+        {/* Privacy */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+            Account Privacy
+          </label>
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="radio"
+                name="privacy"
+                value="public"
+                checked={input.privacy === 'public'}
+                onChange={changeEventHandler}
+                disabled={loading}
+                className="w-4 h-4"
+              />
+              <div>
+                <p className="text-gray-900 dark:text-white font-medium">Public Account</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Anyone can follow you and see your posts</p>
+              </div>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="radio"
+                name="privacy"
+                value="private"
+                checked={input.privacy === 'private'}
+                onChange={changeEventHandler}
+                disabled={loading}
+                className="w-4 h-4"
+              />
+              <div>
+                <p className="text-gray-900 dark:text-white font-medium">Private Account</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">You approve follow requests and only followers see your posts</p>
+              </div>
+            </label>
+          </div>
         </div>
 
         {/* Buttons */}

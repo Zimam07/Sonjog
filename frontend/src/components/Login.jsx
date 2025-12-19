@@ -45,10 +45,27 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 text-gray-900">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+      {/* Background image */}
+      <img 
+        src="/login-bg.jpg?v=2" 
+        alt="building background"
+        className="absolute inset-0 w-full h-full object-cover z-0"
+      />
+      
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black bg-opacity-35 z-10"></div>
+      
+      {/* Content */}
+      <div 
+        className="relative z-20 w-full max-w-md rounded-2xl shadow-2xl p-8 text-gray-900 border border-white/20"
+        style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)'
+        }}
+      >
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-extrabold">Sonjog</h1>
+          <h1 className="text-2xl font-extrabold" style={{backgroundImage: 'linear-gradient(135deg, #65FDF0 10%, #1D6FA3 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>Sonjog</h1>
           <p className="text-sm text-gray-500">Sign in to continue to your account</p>
         </div>
 

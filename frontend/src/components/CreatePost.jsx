@@ -6,7 +6,7 @@ import { Image, X } from 'lucide-react';
 
 const API_URL = 'http://localhost:8000/api/v1';
 
-export default function CreatePost() {
+export default function CreatePost({ onCreated }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [loading, setLoading] = useState(false);
@@ -155,13 +155,8 @@ export default function CreatePost() {
   const handleCreatePost = async (e) => {
     e.preventDefault();
 
-    if (!imageFile) {
-      toast.error('Please select an image');
-      return;
-    }
-
-    if (!caption.trim()) {
-      toast.error('Please add a caption');
+    if (!caption.trim() && !imageFile) {
+      toast.error('Please add text or select an image');
       return;
     }
 
@@ -170,7 +165,9 @@ export default function CreatePost() {
 
       const formData = new FormData();
       formData.append('caption', caption);
-      formData.append('image', imageFile);
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
 
       const res = await axios.post(`${API_URL}/post/addpost`, formData, {
         headers: {
@@ -183,7 +180,9 @@ export default function CreatePost() {
         toast.success(res.data.message);
         setCaption('');
         clearImage();
-        // Optionally refresh posts or add to Redux state
+        if (typeof onCreated === 'function') {
+          onCreated();
+        }
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create post');
@@ -194,8 +193,8 @@ export default function CreatePost() {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6 shadow-sm">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Create Post</h2>
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 mb-6 shadow-sm">
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create Post</h2>
 
       <form onSubmit={handleCreatePost} className="space-y-4">
         {/* Caption */}
@@ -207,9 +206,9 @@ export default function CreatePost() {
             maxLength={300}
             rows="3"
             disabled={loading}
-            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded resize-none text-gray-800 placeholder-gray-400 focus:outline-none"
+            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded resize-none text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
           />
-          <p className="text-xs text-gray-500 mt-1">{caption.length}/300 characters</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{caption.length}/300 characters</p>
         </div>
 
         {/* Image Preview */}
@@ -224,7 +223,7 @@ export default function CreatePost() {
               type="button"
               onClick={clearImage}
               disabled={loading}
-              className="absolute top-2 right-2 bg-white hover:bg-gray-50 text-gray-700 rounded-full p-2 transition border border-gray-200"
+              className="absolute top-2 right-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full p-2 transition border border-gray-200 dark:border-gray-600"
             >
               <X size={20} />
             </button>
@@ -233,7 +232,7 @@ export default function CreatePost() {
 
         {/* Image Upload */}
         <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded cursor-pointer transition disabled:opacity-50">
+          <label className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded cursor-pointer transition disabled:opacity-50">
             <Image size={18} />
             <span>Select Image</span>
             <input
@@ -245,7 +244,7 @@ export default function CreatePost() {
             />
           </label>
           {previewUrl && (
-            <span className="text-sm text-gray-400">Image selected</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">Image selected</span>
           )}
         </div>
 
@@ -258,7 +257,7 @@ export default function CreatePost() {
               clearImage();
             }}
             disabled={loading}
-            className="px-4 py-2 border border-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-50 transition disabled:opacity-50"
+            className="px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition disabled:opacity-50"
           >
             Clear
           </button>
@@ -266,7 +265,7 @@ export default function CreatePost() {
             type="button"
             onClick={() => saveDraft()}
             disabled={loading}
-            className="px-4 py-2 border border-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-50 transition disabled:opacity-50"
+            className="px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition disabled:opacity-50"
           >
             Save Draft
           </button>
@@ -274,7 +273,7 @@ export default function CreatePost() {
             type="button"
             onClick={() => saveDraftToServer(true)}
             disabled={loading}
-            className="px-4 py-2 border border-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-50 transition disabled:opacity-50"
+            className="px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition disabled:opacity-50"
           >
             Save Draft (Server)
           </button>
@@ -282,13 +281,13 @@ export default function CreatePost() {
             type="button"
             onClick={() => setDraftsOpen(true)}
             disabled={loading}
-            className="px-4 py-2 border border-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-50 transition disabled:opacity-50"
+            className="px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition disabled:opacity-50"
           >
             Load Draft
           </button>
           <button
             type="submit"
-            disabled={loading || !imageFile || !caption.trim()}
+            disabled={loading || (!imageFile && !caption.trim())}
             className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded font-semibold disabled:opacity-50 transition"
           >
             {loading ? 'Posting...' : 'Post'}
@@ -299,42 +298,42 @@ export default function CreatePost() {
       {/* Drafts Modal */}
       {draftsOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-md p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-md p-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Saved Drafts</h3>
-              <button onClick={() => setDraftsOpen(false)} className="text-gray-600">Close</button>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Saved Drafts</h3>
+              <button onClick={() => setDraftsOpen(false)} className="text-gray-600 dark:text-gray-300">Close</button>
             </div>
             <div className="space-y-3 max-h-72 overflow-auto">
               {readDrafts().length === 0 ? (
-                <div className="text-sm text-gray-500">No drafts saved</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">No drafts saved</div>
               ) : (
                 readDrafts().map((d) => (
-                  <div key={d.id} className="p-3 border rounded flex items-center gap-3">
+                  <div key={d.id} className="p-3 border border-gray-200 dark:border-gray-700 rounded flex items-center gap-3">
                     <div className="flex-1">
-                      <div className="font-semibold text-sm">{d.fileName || 'Draft'}</div>
-                      <div className="text-xs text-gray-500">{new Date(d.createdAt).toLocaleString()}</div>
+                      <div className="font-semibold text-sm text-gray-900 dark:text-white">{d.fileName || 'Draft'}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{new Date(d.createdAt).toLocaleString()}</div>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => { loadDraft(d); setDraftsOpen(false); }} className="px-3 py-1 bg-sky-600 text-white rounded text-sm">Load</button>
-                      <button onClick={() => { deleteDraft(d.id); }} className="px-3 py-1 border rounded text-sm">Delete</button>
+                      <button onClick={() => { deleteDraft(d.id); }} className="px-3 py-1 border border-gray-200 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-200">Delete</button>
                     </div>
                   </div>
                 ))
               )}
-              <div className="border-t pt-3">
-                <h4 className="text-sm font-semibold mb-2">Server Drafts</h4>
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                <h4 className="text-sm font-semibold mb-2 text-gray-900 dark:text-white">Server Drafts</h4>
                 {serverDrafts.length === 0 ? (
-                  <div className="text-sm text-gray-500">No server drafts</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">No server drafts</div>
                 ) : (
                   serverDrafts.map((sd) => (
-                    <div key={sd._id} className="p-3 border rounded flex items-center gap-3 mb-2">
+                    <div key={sd._id} className="p-3 border border-gray-200 dark:border-gray-700 rounded flex items-center gap-3 mb-2">
                       <div className="flex-1">
-                        <div className="font-semibold text-sm">{sd.image ? 'Image draft' : 'Draft'}</div>
-                        <div className="text-xs text-gray-500">{new Date(sd.updatedAt).toLocaleString()}</div>
+                        <div className="font-semibold text-sm text-gray-900 dark:text-white">{sd.image ? 'Image draft' : 'Draft'}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{new Date(sd.updatedAt).toLocaleString()}</div>
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => loadServerDraft(sd)} className="px-3 py-1 bg-sky-600 text-white rounded text-sm">Load</button>
-                        <button onClick={async () => { await axios.delete(`${API_URL}/draft/${sd._id}`, { withCredentials: true }); fetchServerDrafts(); }} className="px-3 py-1 border rounded text-sm">Delete</button>
+                        <button onClick={async () => { await axios.delete(`${API_URL}/draft/${sd._id}`, { withCredentials: true }); fetchServerDrafts(); }} className="px-3 py-1 border border-gray-200 dark:border-gray-600 rounded text-sm text-gray-700 dark:text-gray-200">Delete</button>
                       </div>
                     </div>
                   ))

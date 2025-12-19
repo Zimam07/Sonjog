@@ -13,4 +13,16 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'react-redux',
+      '@reduxjs/toolkit',
+      'axios',
+      'socket.io-client',
+      'redux-persist',
+    ],
+  },
 });

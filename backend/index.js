@@ -10,8 +10,11 @@ import postRoute from "./routes/post.route.js";
 import notificationRoute from "./routes/notification.route.js";
 import mediaRoute from "./routes/media.route.js";
 import draftRoute from "./routes/draft.route.js";
+import groupRoute from "./routes/group.route.js";
+import marketplaceRoute from "./routes/marketplace.route.js";
 import http from "http";
 import { initSocket } from "./socket/socket.js";
+import { publishScheduledStories } from './controllers/story.controller.js';
 
 
 // Load environment variables FIRST
@@ -63,6 +66,8 @@ app.use("/api/v1/post", postRoute);
 app.use("/api/v1/notification", notificationRoute);
 app.use("/api/v1/media", mediaRoute);
 app.use("/api/v1/draft", draftRoute);
+app.use("/api/v1/group", groupRoute);
+app.use("/api/v1/marketplace", marketplaceRoute);
 
 const PORT = process.env.PORT || 8000;
 
@@ -91,6 +96,20 @@ const startServer = async () => {
                 console.log(`✅ Server (with sockets) is running on port ${PORT}`);
             }
         });
+
+        // Start a lightweight scheduler to publish scheduled stories.
+        // Runs every 60 seconds and promotes any stories whose scheduledAt <= now.
+        const scheduleInterval = 60 * 1000;
+        setInterval(async () => {
+            try {
+                const r = await publishScheduledStories();
+                if (r && r.published && r.published > 0) {
+                    console.log(`Published ${r.published} scheduled stories at ${new Date().toISOString()}`);
+                }
+            } catch (e) {
+                console.error('Scheduled story publish failed', e);
+            }
+        }, scheduleInterval);
 
         // Log server errors (EADDRINUSE, EACCES, etc.) so we can diagnose connection issues
         server.on('error', (err) => {

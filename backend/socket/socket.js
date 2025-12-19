@@ -24,6 +24,24 @@ export const initSocket = (server, corsOrigins = null) => {
             }
         });
 
+        // join group room: socket.on('joinGroup', { groupId })
+        socket.on('joinGroup', ({ groupId }) => {
+            try {
+                socket.join(`group-${groupId}`);
+            } catch (e) {
+                console.error('Join group error:', e);
+            }
+        });
+
+        // leave group room
+        socket.on('leaveGroup', ({ groupId }) => {
+            try {
+                socket.leave(`group-${groupId}`);
+            } catch (e) {
+                console.error('Leave group error:', e);
+            }
+        });
+
         // typing indicator: forward typing events to recipient
         socket.on('typing', ({ toUserId, fromUserId }) => {
             try {

@@ -32,6 +32,19 @@ export default function Signup() {
         return;
       }
 
+      // Client-side validations for email domain and password length
+      const lowerEmail = String(input.email).toLowerCase();
+      const allowedDomains = ['@bracu.ac.bd', '@g.bracu.ac.bd'];
+      const hasAllowedDomain = allowedDomains.some((d) => lowerEmail.endsWith(d));
+      if (!hasAllowedDomain) {
+        toast.error('Use a BRACU email (@bracu.ac.bd or @g.bracu.ac.bd)');
+        return;
+      }
+      if (String(input.password).length < 5) {
+        toast.error('Password must be at least 5 characters long');
+        return;
+      }
+
       // Register user. Include credentials so cookies (if set at register) are accepted in cross-port dev.
       const registerRes = await axios.post(
         `${API_URL}/register`,
@@ -77,7 +90,7 @@ export default function Signup() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 text-gray-900">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-extrabold">Create your account</h1>
+          <h1 className="text-2xl font-extrabold" style={{backgroundImage: 'linear-gradient(135deg, #65FDF0 10%, #1D6FA3 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>Create your account</h1>
           <p className="text-sm text-gray-500">Join Sonjog — it's quick and easy.</p>
         </div>
 

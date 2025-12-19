@@ -36,12 +36,12 @@ export default function ReelGrid() {
   return (
     <div className="my-6">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold text-gray-800">Reels</h4>
-        <small className="text-xs text-gray-500">{reels.length} found</small>
+        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Reels</h4>
+        <small className="text-xs text-gray-600 dark:text-gray-400">{reels.length} found</small>
       </div>
 
       {reels.length === 0 ? (
-        <div className="py-6 text-center text-gray-500">No reels yet — share a short video to appear here.</div>
+        <div className="py-6 text-center text-gray-700 dark:text-gray-300">No reels yet — share a short video to appear here.</div>
       ) : (
         <div className="grid grid-cols-2 gap-4">
           {reels.map((r) => (

@@ -1,13 +1,17 @@
 import { useEffect } from 'react'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import ChatPage from './components/ChatPage'
 import EditProfile from './components/EditProfile'
 import Home from './components/Home'
+import Explore from './components/Explore'
 import Login from './components/Login'
 import MainLayout from './components/MainLayout'
 import Profile from './components/Profile'
 import Signup from './components/Signup'
 import DiagnosticsPage from './components/DiagnosticsPage'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import Marketplace from './components/Marketplace'
+import MarketplaceItemDetail from './components/MarketplaceItemDetail'
+import Saved from './components/Saved'
 import { io } from "socket.io-client";
 import Notifications from './components/Notifications'
 import { useDispatch, useSelector } from 'react-redux'
@@ -15,7 +19,9 @@ import { setSocket } from './redux/socketSlice'
 import { setSocketInstance, clearSocketInstance } from './lib/socketManager'
 import { setOnlineUsers } from './redux/chatSlice'
 import { setLikeNotification } from './redux/rtnSlice'
+import { setAuthUser } from './redux/authSlice'
 import ProtectedRoutes from './components/ProtectedRoutes'
+import RehydrationGate from './components/RehydrationGate'
 
 
 const browserRouter = createBrowserRouter([
@@ -29,7 +35,7 @@ const browserRouter = createBrowserRouter([
       },
       {
         path: '/explore',
-        element: <ProtectedRoutes><Home /></ProtectedRoutes>
+        element: <ProtectedRoutes><Explore /></ProtectedRoutes>
       },
       {
         path: '/profile/:id',
@@ -51,6 +57,18 @@ const browserRouter = createBrowserRouter([
         path: '/create',
         element: <ProtectedRoutes><Home /></ProtectedRoutes>
       },
+      {
+        path: '/marketplace',
+        element: <ProtectedRoutes><Marketplace /></ProtectedRoutes>
+      },
+      {
+        path: '/marketplace/:id',
+        element: <ProtectedRoutes><MarketplaceItemDetail /></ProtectedRoutes>
+      },
+      {
+        path: '/saved',
+        element: <ProtectedRoutes><Saved /></ProtectedRoutes>
+      },
     ]
   },
   {
@@ -71,6 +89,53 @@ function App() {
   const { user } = useSelector(store => store.auth);
   const { connected, id } = useSelector(store => store.socketio);
   const dispatch = useDispatch();
+
+  // Verify auth on app initialization
+  useEffect(() => {
+    const verifyAuth = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/v1/user/me', {
+          method: 'GET',
+          credentials: 'include', // include cookies
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            // Auth is valid, set the user in Redux
+            dispatch(setAuthUser(data.user));
+          }
+        } else if (response.status === 401) {
+          // Token expired or invalid, clear auth
+          dispatch(setAuthUser(null));
+        }
+        // For other errors, don't clear auth - let persisted state remain
+      } catch (error) {
+        console.log('Auth verification failed:', error);
+        // On network error, don't clear auth - keep persisted state
+        // This allows the app to work offline and prevents clearing valid sessions on network issues
+      }
+    };
+
+    // Only verify if we have a persisted user
+    const persisted = localStorage.getItem('persist:root');
+    if (persisted) {
+      try {
+        const parsed = JSON.parse(persisted);
+        if (parsed && parsed.auth) {
+          const auth = JSON.parse(parsed.auth);
+          if (auth && auth.user) {
+            verifyAuth();
+          }
+        }
+      } catch (e) {
+        // ignore parse errors
+      }
+    }
+  }, [dispatch]);
 
   useEffect(() => {
     if (user) {
@@ -106,7 +171,9 @@ function App() {
 
   return (
     <>
-      <RouterProvider router={browserRouter} />
+      <RehydrationGate>
+        <RouterProvider router={browserRouter} />
+      </RehydrationGate>
     </>
   )
 }

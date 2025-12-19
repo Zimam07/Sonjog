@@ -9,6 +9,8 @@ export default function StoryUploader() {
   const [isOpen, setIsOpen] = useState(false);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [schedule, setSchedule] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState('');
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -26,6 +28,10 @@ export default function StoryUploader() {
     if (!file) return toast.error('Please select a file');
     const fd = new FormData();
     fd.append('media', file);
+    if (schedule && scheduledAt) {
+      // send ISO string
+      fd.append('scheduledAt', new Date(scheduledAt).toISOString());
+    }
     try {
       setLoading(true);
       const res = await axios.post(`${API}/story`, fd, { withCredentials: true });
@@ -49,6 +55,25 @@ export default function StoryUploader() {
     setIsOpen(false);
     setFile(null);
     setPreview(null);
+  };
+
+  // Scheduled stories management
+  const [manageOpen, setManageOpen] = useState(false);
+  const [scheduledList, setScheduledList] = useState([]);
+  const fetchScheduled = async () => {
+    try {
+      const res = await axios.get('http://localhost:8000/api/v1/media/story/scheduled', { withCredentials: true });
+      if (res.data.success) setScheduledList(res.data.stories || []);
+    } catch (e) { console.log(e); }
+  };
+  const cancelScheduled = async (id) => {
+    try {
+      const res = await axios.delete(`http://localhost:8000/api/v1/media/story/scheduled/${id}`, { withCredentials: true });
+      if (res.data.success) {
+        toast.success('Cancelled scheduled story');
+        fetchScheduled();
+      }
+    } catch (e) { toast.error('Cancel failed'); }
   };
 
   return (
@@ -113,13 +138,27 @@ export default function StoryUploader() {
                     >
                       Change File
                     </button>
-                    <button
-                      onClick={handleUpload}
-                      disabled={loading}
-                      className="flex-1 px-4 py-3 bg-gradient-to-r from-sky-600 to-sky-500 text-white font-semibold rounded-xl hover:from-sky-500 hover:to-sky-400 disabled:opacity-50 transition"
-                    >
-                      {loading ? 'Uploading...' : 'Upload Story'}
-                    </button>
+                    <div className="flex-1">
+                      <label className="flex items-center gap-2 text-sm text-gray-300">
+                        <input type="checkbox" checked={schedule} onChange={(e) => setSchedule(e.target.checked)} />
+                        <span>Schedule publish</span>
+                      </label>
+                      {schedule && (
+                        <input
+                          type="datetime-local"
+                          value={scheduledAt}
+                          onChange={(e) => setScheduledAt(e.target.value)}
+                          className="mt-2 w-full rounded-md p-2 bg-gray-800 text-white border border-sky-700"
+                        />
+                      )}
+                      <button
+                        onClick={handleUpload}
+                        disabled={loading}
+                        className="w-full mt-3 px-4 py-3 bg-gradient-to-r from-sky-600 to-sky-500 text-white font-semibold rounded-xl hover:from-sky-500 hover:to-sky-400 disabled:opacity-50 transition"
+                      >
+                        {loading ? (schedule ? 'Scheduling...' : 'Uploading...') : (schedule ? 'Schedule Story' : 'Upload Story')}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -161,6 +200,41 @@ export default function StoryUploader() {
                 onChange={handleFileSelect}
                 className="hidden"
               />
+              <div className="p-4 border-t border-sky-800 flex items-center justify-between">
+                <button onClick={() => { setManageOpen(true); fetchScheduled(); }} className="text-sm text-sky-300 hover:underline">Manage Scheduled Stories</button>
+                <div className="text-xs text-gray-500">Stories expire 24 hours after publish</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manage Scheduled Stories Modal */}
+      {manageOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gradient-to-br from-gray-900 to-black border border-sky-700/30 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+            <div className="p-6 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white">Scheduled Stories</h3>
+              <button onClick={() => setManageOpen(false)} className="text-white">Close</button>
+            </div>
+            <div className="p-4">
+              {scheduledList.length === 0 ? (
+                <p className="text-sm text-gray-400">No scheduled stories</p>
+              ) : (
+                <ul className="space-y-4">
+                  {scheduledList.map(st => (
+                    <li key={st._id} className="flex items-center justify-between bg-gray-900/40 p-3 rounded">
+                      <div>
+                        <div className="text-sm text-white">{new Date(st.scheduledAt).toLocaleString()}</div>
+                        <div className="text-xs text-gray-400">{st.mediaType}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => cancelScheduled(st._id)} className="px-3 py-1 text-sm bg-red-600 rounded">Cancel</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </div>

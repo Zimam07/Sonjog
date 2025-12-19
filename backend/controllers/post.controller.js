@@ -350,6 +350,36 @@ export const deletePost = async (req,res) => {
         console.log(error);
     }
 }
+export const updatePost = async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const authorId = req.id;
+        const { caption } = req.body;
+
+        const post = await Post.findById(postId);
+        if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+        if (String(post.author) !== String(authorId)) return res.status(403).json({ success: false, message: 'Unauthorized' });
+
+        let imageUrl = post.image;
+        if (req.file) {
+            const fileUri = `data:image/jpeg;base64,${req.file.buffer.toString('base64')}`;
+            const uploaded = await cloudinary.uploader.upload(fileUri);
+            imageUrl = uploaded.secure_url;
+        }
+
+        post.caption = caption || '';
+        post.image = imageUrl;
+        await post.save();
+
+        await post.populate({ path: 'author', select: 'username profilePicture' });
+        await post.populate({ path: 'comments', populate: { path: 'author', select: 'username profilePicture' } });
+
+        return res.status(200).json({ success: true, message: 'Post updated', post });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
 export const bookmarkPost = async (req,res) => {
     try {
         const postId = req.params.id;
@@ -375,6 +405,30 @@ export const bookmarkPost = async (req,res) => {
         console.log(error);
     }
 }
+export const getSavedPosts = async (req, res) => {
+    try {
+        const userId = req.id;
+
+        const user = await User.findById(userId).populate({
+            path: 'bookmarks',
+            options: { sort: { createdAt: -1 } },
+            populate: [
+                { path: 'author', select: 'username profilePicture' },
+                { path: 'comments', populate: { path: 'author', select: 'username profilePicture' } },
+            ],
+        });
+
+        const posts = user?.bookmarks || [];
+
+        return res.status(200).json({
+            success: true,
+            posts,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
 export const searchPosts = async (req, res) => {
     try {
         const q = req.query.q || '';

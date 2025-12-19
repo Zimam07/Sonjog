@@ -4,8 +4,8 @@ import { Navigate } from 'react-router-dom';
 export default function ProtectedRoutes({ children }) {
   const { user } = useSelector(store => store.auth);
 
-  // If redux hasn't rehydrated yet, try to read persisted auth from localStorage
-  // This helps E2E tests and avoids a flash redirect when the app is rehydrating.
+  // Try to read persisted auth from localStorage as fallback
+  // This ensures we don't redirect to login while Redux is rehydrating
   let persistedUser = null;
   try {
     const persisted = localStorage.getItem('persist:root');
@@ -20,6 +20,7 @@ export default function ProtectedRoutes({ children }) {
     // ignore parse errors
   }
 
+  // Check if user is authenticated (either in Redux or in persisted storage)
   const isAuthenticated = !!(user || persistedUser);
 
   return isAuthenticated ? children : <Navigate to="/login" />;

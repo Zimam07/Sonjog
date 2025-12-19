@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Heart, MessageCircle, Bookmark, Trash2, Send } from 'lucide-react';
-import CreatePost from './CreatePost';
 import StoryViewer from './StoryViewer';
 import StoryUploader from './StoryUploader';
 import ReelGrid from './ReelGrid';
@@ -14,6 +14,7 @@ const API_URL = 'http://localhost:8000/api/v1/post';
 
 export default function Home() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const userId = user && user._id;
   const [posts, setPosts] = useState([]);
@@ -22,9 +23,82 @@ export default function Home() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [newComment, setNewComment] = useState({});
+  const [bookmarkedPosts, setBookmarkedPosts] = useState([]);
+  const [sharePostId, setSharePostId] = useState(null);
+  const [followers, setFollowers] = useState([]);
+  const [loadingFollowers, setLoadingFollowers] = useState(false);
+
+  const goToProfile = (authorId) => {
+    if (authorId) navigate(`/profile/${authorId}`);
+  };
+
+  const fetchFollowersForShare = async () => {
+    try {
+      setLoadingFollowers(true);
+      // Get current user's followers
+      const res = await axios.get(`http://localhost:8000/api/v1/user/${userId}/profile`, {
+        withCredentials: true,
+      });
+      if (res.data.success) {
+        const followerList = res.data.user.followers || [];
+        // If followers are strings (IDs), we need to fetch their details
+        if (followerList.length > 0 && typeof followerList[0] === 'string') {
+          // Fetch user details for each follower ID
+          const followerDetails = await Promise.all(
+            followerList.map(async (followerId) => {
+              try {
+                const userRes = await axios.get(`http://localhost:8000/api/v1/user/${followerId}/profile`, {
+                  withCredentials: true,
+                });
+                return userRes.data.user;
+              } catch (e) {
+                return { _id: followerId, username: 'User', email: followerId };
+              }
+            })
+          );
+          setFollowers(followerDetails);
+        } else {
+          setFollowers(followerList);
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error('Failed to load followers');
+    } finally {
+      setLoadingFollowers(false);
+    }
+  };
+
+  const handleSharePost = (postId) => {
+    console.log('Share button clicked for post:', postId);
+    setSharePostId(postId);
+    // Fetch followers asynchronously
+    setLoadingFollowers(true);
+    fetchFollowersForShare();
+  };
+
+  const sharePostWithUser = async (userId) => {
+    try {
+      const post = posts.find(p => p._id === sharePostId);
+      const message = `Check out this post: ${post.caption || 'A post from ' + post.author.username}\n\n${post.image ? '[Post has an image]' : ''}`;
+      
+      await axios.post(
+        `http://localhost:8000/api/v1/message/send/${userId}`,
+        {
+          textMessage: message,
+        },
+        { withCredentials: true }
+      );
+      toast.success('Post shared!');
+    } catch (error) {
+      console.log(error);
+      toast.error('Failed to share post');
+    }
+  };
 
   useEffect(() => {
     fetchPosts(1);
+    fetchBookmarkedPosts();
     // infinite scroll
     const onScroll = () => {
       if (!hasMore || loadingMore) return;
@@ -36,6 +110,20 @@ export default function Home() {
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  const fetchBookmarkedPosts = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/saved`, {
+        withCredentials: true,
+      });
+      if (res.data.success) {
+        const bookmarkedIds = (res.data.posts || []).map((post) => post._id);
+        setBookmarkedPosts(bookmarkedIds);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   const fetchPosts = async (targetPage = 1) => {
     try {
@@ -123,10 +211,17 @@ export default function Home() {
         withCredentials: true,
       });
       if (res.data.success) {
+        // Toggle bookmark in local state
+        setBookmarkedPosts((prev) => (
+          prev.includes(postId)
+            ? prev.filter((id) => id !== postId)
+            : [...prev, postId]
+        ));
         toast.success(res.data.message);
       }
     } catch (error) {
       console.log(error);
+      toast.error('Failed to bookmark post');
     }
   };
 
@@ -179,35 +274,39 @@ export default function Home() {
   };
 
   if (loading) {
-    return <div className="text-center py-10 text-white">Loading posts...</div>;
+    return <div className="text-center py-10 text-gray-900 dark:text-white">Loading posts...</div>;
   }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
-      {/* Create Post Form */}
-  <StoryViewer />
-  <StoryUploader />
-  <CreatePost />
-  <ReelUploader />
-  <ReelGrid />
+      <StoryViewer />
+      <StoryUploader />
+      <ReelUploader />
+      <ReelGrid />
 
       <div className="space-y-6">
         {posts.length === 0 ? (
-          <div className="text-center py-10 text-gray-400">No posts yet</div>
+          <div className="text-center py-10 text-gray-500 dark:text-gray-400">No posts yet</div>
         ) : (
           posts.map((post) => (
-            <div key={post._id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+            <div key={post._id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
               {/* Post Header */}
               <div className="p-4 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <img
                     src={(post.author && post.author.profilePicture) || 'https://via.placeholder.com/40'}
                     alt={(post.author && post.author.username) || 'Deleted user'}
-                    className="w-11 h-11 rounded-full"
+                    className="w-11 h-11 rounded-full cursor-pointer hover:opacity-80 transition"
+                    onClick={() => goToProfile(post.author?._id)}
                   />
                   <div>
-                    <h3 className="font-semibold text-gray-900">{(post.author && post.author.username) || 'Deleted user'}</h3>
-                    <p className="text-xs text-gray-500">
+                    <h3
+                      className="font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-sky-600 dark:hover:text-sky-400 transition"
+                      onClick={() => goToProfile(post.author?._id)}
+                    >
+                      {(post.author && post.author.username) || 'Deleted user'}
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {new Date(post.createdAt).toLocaleDateString()}
                     </p>
                   </div>
@@ -224,7 +323,7 @@ export default function Home() {
 
               {/* Post Image */}
               {post.image && (
-                <div className="w-full bg-gray-100">
+                <div className="w-full bg-gray-100 dark:bg-gray-800">
                   <img
                     src={post.image}
                     alt="Post"
@@ -233,8 +332,17 @@ export default function Home() {
                 </div>
               )}
 
+              {/* Post Caption - Prominent Display */}
+              {post.caption && (
+                <div className="px-4 pt-4 pb-3">
+                  <div className="text-base text-gray-800 dark:text-gray-200 leading-relaxed">
+                    {parseCaptionToElements(post.caption)}
+                  </div>
+                </div>
+              )}
+
               {/* Post Actions */}
-              <div className="p-4 flex items-center justify-between">
+              <div className="px-4 py-3 flex items-center justify-between border-t border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() =>
@@ -242,38 +350,34 @@ export default function Home() {
                         ? dislikeHandler(post._id)
                         : likeHandler(post._id)
                     }
-                    className={`p-2 rounded-full hover:bg-gray-100 transition ${(post.likes && post.likes.includes(userId)) ? 'text-red-500' : 'text-gray-600'}`}
+                    className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition ${(post.likes && post.likes.includes(userId)) ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'}`}
                   >
-                    <Heart size={20} />
+                    <Heart size={20} fill={(post.likes && post.likes.includes(userId)) ? 'currentColor' : 'none'} />
                   </button>
 
-                  <button className="p-2 rounded-full hover:bg-gray-100 text-gray-600">
+                  <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300">
                     <MessageCircle size={20} />
                   </button>
 
-                  <button className="p-2 rounded-full hover:bg-gray-100 text-gray-600">
+                  <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300">
                     <Send size={20} />
                   </button>
                 </div>
 
                 <div>
-                  <button onClick={() => bookmarkHandler(post._id)} className="p-2 rounded-full hover:bg-gray-100 text-gray-600">
-                    <Bookmark size={20} />
+                  <button onClick={() => bookmarkHandler(post._id)} className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition ${
+                    bookmarkedPosts.includes(post._id) ? 'text-red-500' : 'text-gray-600 dark:text-gray-300'
+                  }`}>
+                    <Bookmark size={20} fill={bookmarkedPosts.includes(post._id) ? 'currentColor' : 'none'} />
                   </button>
                 </div>
               </div>
 
-              {/* Likes & Caption */}
-              <div className="px-4 pb-3">
-                <div className="text-sm font-semibold text-gray-900">{(post.likes && post.likes.length) || 0} likes</div>
-                {post.caption && (
-                  <div className="text-sm text-gray-800 mt-1">
-                    <span className="font-semibold mr-2">{(post.author && post.author.username) || 'Deleted user'}</span>
-                    <span>{parseCaptionToElements(post.caption)}</span>
-                  </div>
-                )}
+              {/* Likes Count */}
+              <div className="px-4 pb-2">
+                <div className="text-sm font-semibold text-gray-900 dark:text-white">{(post.likes && post.likes.length) || 0} likes</div>
                 {post.comments && post.comments.length > 0 && (
-                  <div className="text-sm text-gray-500 mt-2">View all {post.comments.length} comments</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">View all {post.comments.length} comments</div>
                 )}
               </div>
 
@@ -286,10 +390,11 @@ export default function Home() {
                         <img
                           src={(comment.author && comment.author.profilePicture) || 'https://via.placeholder.com/32'}
                           alt={(comment.author && comment.author.username) || 'Deleted user'}
-                          className="w-8 h-8 rounded-full"
+                          className="w-8 h-8 rounded-full cursor-pointer hover:opacity-80 transition"
+                          onClick={() => goToProfile(comment.author?._id)}
                         />
                         <div>
-                          <div className="text-sm"><span className="font-semibold text-gray-900 mr-2">{(comment.author && comment.author.username) || 'Deleted user'}</span><span className="text-gray-700">{comment.text}</span></div>
+                          <div className="text-sm"><span className="font-semibold text-gray-900 dark:text-white mr-2 cursor-pointer hover:text-sky-600 dark:hover:text-sky-400 transition" onClick={() => goToProfile(comment.author?._id)}>{(comment.author && comment.author.username) || 'Deleted user'}</span><span className="text-gray-700 dark:text-gray-300">{comment.text}</span></div>
                         </div>
                       </div>
                     ))}
@@ -297,7 +402,7 @@ export default function Home() {
                 )}
 
                 {/* Comment Input */}
-                <div className="flex items-center gap-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center gap-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                   <input
                     type="text"
                     placeholder="Add a comment..."
@@ -310,7 +415,7 @@ export default function Home() {
                         commentHandler(post._id);
                       }
                     }}
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-700 placeholder-gray-400 focus:outline-none"
+                    className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
                   />
                   <button
                     onClick={() => commentHandler(post._id)}
@@ -324,12 +429,15 @@ export default function Home() {
           ))
         )}
         {loadingMore && (
-          <div className="text-center py-6 text-gray-400">Loading more posts...</div>
+          <div className="text-center py-6 text-gray-500 dark:text-gray-400">Loading more posts...</div>
         )}
         {!hasMore && posts.length > 0 && (
-          <div className="text-center py-6 text-gray-400">No more posts</div>
+          <div className="text-center py-6 text-gray-500 dark:text-gray-400">No more posts</div>
         )}
       </div>
+
+      {/* Share Post Modal */}
+      {/* Removed for now - feature simplified */}
     </div>
   );
 }
