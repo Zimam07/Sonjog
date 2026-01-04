@@ -19,19 +19,38 @@ export const createListing = async (req, res) => {
       });
     }
 
-    // Handle image upload - convert buffers to data URIs and upload to cloudinary
+    // Handle image upload - same as posts
     let images = [];
     if (req.files && req.files.length > 0) {
       console.log('Processing', req.files.length, 'images...');
       for (const file of req.files) {
         try {
           console.log('Uploading file:', file.originalname, 'Size:', file.size, 'Type:', file.mimetype);
-          // Convert buffer to base64 data URI
-          const fileUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+          
+          // Optimize with sharp if available
+          let optimizedImageBuffer;
+          try {
+            const mod = await import('sharp');
+            const sharpLib = mod && mod.default ? mod.default : mod;
+            optimizedImageBuffer = await sharpLib(file.buffer)
+              .resize({ width: 1200, height: 1200, fit: 'inside' })
+              .toFormat('jpeg', { quality: 85 })
+              .toBuffer();
+            console.log('Image optimized with sharp');
+          } catch (e) {
+            console.log('Sharp optimization skipped, using original buffer');
+            optimizedImageBuffer = file.buffer;
+          }
+
+          // Buffer to data URI
+          const fileUri = `data:image/jpeg;base64,${optimizedImageBuffer.toString('base64')}`;
           console.log('Data URI created, uploading to Cloudinary...');
+          
           const cloudResponse = await cloudinary.uploader.upload(fileUri, {
-            resource_type: 'auto',
+            folder: 'marketplace',
+            resource_type: 'image',
           });
+          
           if (cloudResponse && cloudResponse.secure_url) {
             console.log('✓ Image uploaded successfully:', cloudResponse.secure_url);
             images.push(cloudResponse.secure_url);
@@ -224,18 +243,37 @@ export const updateListing = async (req, res) => {
 
     console.log('Files received:', req.files?.length || 0);
 
-    // Upload new images if provided
+    // Upload new images if provided - same as posts
     if (req.files && req.files.length > 0) {
       console.log('Uploading', req.files.length, 'new images');
       for (const file of req.files) {
         try {
           console.log('Uploading file:', file.originalname, 'Size:', file.size, 'Type:', file.mimetype);
-          // Convert buffer to base64 data URI
-          const fileUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+          
+          // Optimize with sharp if available
+          let optimizedImageBuffer;
+          try {
+            const mod = await import('sharp');
+            const sharpLib = mod && mod.default ? mod.default : mod;
+            optimizedImageBuffer = await sharpLib(file.buffer)
+              .resize({ width: 1200, height: 1200, fit: 'inside' })
+              .toFormat('jpeg', { quality: 85 })
+              .toBuffer();
+            console.log('Image optimized with sharp');
+          } catch (e) {
+            console.log('Sharp optimization skipped, using original buffer');
+            optimizedImageBuffer = file.buffer;
+          }
+
+          // Buffer to data URI
+          const fileUri = `data:image/jpeg;base64,${optimizedImageBuffer.toString('base64')}`;
           console.log('Data URI created, uploading to Cloudinary...');
+          
           const cloudResponse = await cloudinary.uploader.upload(fileUri, {
-            resource_type: 'auto',
+            folder: 'marketplace',
+            resource_type: 'image',
           });
+          
           if (cloudResponse && cloudResponse.secure_url) {
             console.log('✓ Image uploaded successfully:', cloudResponse.secure_url);
             updatedImages.push(cloudResponse.secure_url);
