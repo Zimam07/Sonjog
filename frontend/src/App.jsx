@@ -64,12 +64,12 @@ const browserRouter = createBrowserRouter([
         element: <ProtectedRoutes><Marketplace /></ProtectedRoutes>
       },
       {
-        path: '/marketplace/:id',
-        element: <ProtectedRoutes><MarketplaceItemDetail /></ProtectedRoutes>
-      },
-      {
         path: '/marketplace/edit/:id',
         element: <ProtectedRoutes><MarketplaceEdit /></ProtectedRoutes>
+      },
+      {
+        path: '/marketplace/:id',
+        element: <ProtectedRoutes><MarketplaceItemDetail /></ProtectedRoutes>
       },
       {
         path: '/saved',
