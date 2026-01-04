@@ -33,9 +33,14 @@ export default function ReelModal({ reels, initialIndex, onClose, onReelDeleted 
 
     setIsDeleting(true);
     try {
+      console.log('Attempting to delete reel:', currentReel._id);
+      console.log('API URL:', `${MEDIA_API}/reel/${currentReel._id}`);
+      
       const res = await axios.delete(`${MEDIA_API}/reel/${currentReel._id}`, {
         withCredentials: true,
       });
+
+      console.log('Delete response:', res.data);
 
       if (res.data.success) {
         toast.success('Reel deleted');
@@ -51,8 +56,14 @@ export default function ReelModal({ reels, initialIndex, onClose, onReelDeleted 
         }
       }
     } catch (error) {
-      console.log('Delete error:', error);
-      const errorMsg = error.response?.data?.message || 'Failed to delete reel';
+      console.error('Delete error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      });
+      
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to delete reel';
       toast.error(errorMsg);
     } finally {
       setIsDeleting(false);
