@@ -7,6 +7,11 @@ export const createListing = async (req, res) => {
     const sellerId = req.id;
     const { title, description, category, price, location } = req.body;
 
+    console.log('=== CREATE LISTING REQUEST ===');
+    console.log('Seller ID:', sellerId);
+    console.log('Body:', { title, description, category, price, location });
+    console.log('Files received:', req.files?.length || 0);
+
     if (!title || !description || !category || !price || !location) {
       return res.status(400).json({
         success: false,
@@ -17,21 +22,31 @@ export const createListing = async (req, res) => {
     // Handle image upload - convert buffers to data URIs and upload to cloudinary
     let images = [];
     if (req.files && req.files.length > 0) {
+      console.log('Processing', req.files.length, 'images...');
       for (const file of req.files) {
         try {
+          console.log('Uploading file:', file.originalname, 'Size:', file.size, 'Type:', file.mimetype);
           // Convert buffer to base64 data URI
           const fileUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+          console.log('Data URI created, uploading to Cloudinary...');
           const cloudResponse = await cloudinary.uploader.upload(fileUri, {
             resource_type: 'auto',
           });
           if (cloudResponse && cloudResponse.secure_url) {
+            console.log('✓ Image uploaded successfully:', cloudResponse.secure_url);
             images.push(cloudResponse.secure_url);
           }
         } catch (err) {
-          console.error('Error uploading image:', err);
+          console.error('✗ Error uploading image:', err.message);
+          console.error('Full error:', err);
         }
       }
+    } else {
+      console.log('No files to upload');
     }
+
+    console.log('Total images uploaded:', images.length);
+    console.log('Image URLs:', images);
 
     const listing = await Marketplace.create({
       title,
@@ -43,6 +58,9 @@ export const createListing = async (req, res) => {
       seller: sellerId,
     });
 
+    console.log('Listing created with ID:', listing._id);
+    console.log('Images in listing:', listing.images);
+
     await listing.populate('seller', 'username profilePicture');
 
     return res.status(201).json({
@@ -51,7 +69,7 @@ export const createListing = async (req, res) => {
       listing,
     });
   } catch (error) {
-    console.log(error);
+    console.log('CREATE LISTING ERROR:', error);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -158,6 +176,13 @@ export const updateListing = async (req, res) => {
     const { id } = req.params;
     const { title, description, category, price, location, isAvailable, existingImages } = req.body;
 
+    console.log('=== UPDATE LISTING REQUEST ===');
+    console.log('User ID:', userId);
+    console.log('Listing ID:', id);
+    console.log('Body:', { title, description, category, price, location, isAvailable });
+    console.log('Existing images param:', existingImages);
+    console.log('Files received:', req.files?.length || 0);
+
     const listing = await Marketplace.findById(id);
 
     if (!listing) {
@@ -173,6 +198,8 @@ export const updateListing = async (req, res) => {
         message: 'Unauthorized',
       });
     }
+
+    console.log('Current listing images:', listing.images);
 
     if (title) listing.title = title;
     if (description) listing.description = description;
@@ -202,17 +229,20 @@ export const updateListing = async (req, res) => {
       console.log('Uploading', req.files.length, 'new images');
       for (const file of req.files) {
         try {
+          console.log('Uploading file:', file.originalname, 'Size:', file.size, 'Type:', file.mimetype);
           // Convert buffer to base64 data URI
           const fileUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+          console.log('Data URI created, uploading to Cloudinary...');
           const cloudResponse = await cloudinary.uploader.upload(fileUri, {
             resource_type: 'auto',
           });
           if (cloudResponse && cloudResponse.secure_url) {
-            console.log('Image uploaded successfully:', cloudResponse.secure_url);
+            console.log('✓ Image uploaded successfully:', cloudResponse.secure_url);
             updatedImages.push(cloudResponse.secure_url);
           }
         } catch (err) {
-          console.error('Error uploading image:', err);
+          console.error('✗ Error uploading image:', err.message);
+          console.error('Full error:', err);
         }
       }
     }
@@ -220,9 +250,12 @@ export const updateListing = async (req, res) => {
     // Limit to 5 images
     listing.images = updatedImages.slice(0, 5);
     console.log('Final images count:', listing.images.length);
+    console.log('Final image URLs:', listing.images);
 
     await listing.save();
     await listing.populate('seller', 'username profilePicture');
+
+    console.log('Listing updated successfully');
 
     return res.json({
       success: true,
@@ -230,7 +263,7 @@ export const updateListing = async (req, res) => {
       listing,
     });
   } catch (error) {
-    console.log(error);
+    console.log('UPDATE LISTING ERROR:', error);
     return res.status(500).json({
       success: false,
       message: error.message,
