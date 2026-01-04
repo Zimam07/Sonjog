@@ -2,6 +2,27 @@ import { Marketplace } from '../models/marketplace.model.js';
 import { User } from '../models/user.model.js';
 import cloudinary from '../utils/cloudinary.js';
 
+// Placeholder images for different categories
+const placeholderImages = {
+  'Books': 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=800&q=80',
+  'Sports': 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&q=80',
+  'Home & Garden': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80',
+  'Electronics': 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=800&q=80',
+  'Clothing': 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&q=80',
+  'Vehicles': 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&q=80',
+  'Services': 'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=800&q=80',
+  'Other': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80'
+};
+
+// Helper function to ensure listings have images
+const ensureListingImages = (listing) => {
+  const listingObj = listing.toObject ? listing.toObject() : listing;
+  if (!listingObj.images || listingObj.images.length === 0) {
+    listingObj.images = [placeholderImages[listingObj.category] || placeholderImages['Other']];
+  }
+  return listingObj;
+};
+
 export const createListing = async (req, res) => {
   try {
     const sellerId = req.id;
@@ -128,9 +149,12 @@ export const getAllListings = async (req, res) => {
       .populate('seller', 'username profilePicture')
       .sort({ createdAt: -1 });
 
+    // Ensure all listings have images (add placeholders if needed)
+    const listingsWithImages = listings.map(ensureListingImages);
+
     return res.json({
       success: true,
-      listings,
+      listings: listingsWithImages,
     });
   } catch (error) {
     console.log(error);
@@ -149,9 +173,12 @@ export const getMyListings = async (req, res) => {
       .populate('seller', 'username profilePicture')
       .sort({ createdAt: -1 });
 
+    // Ensure all listings have images (add placeholders if needed)
+    const listingsWithImages = listings.map(ensureListingImages);
+
     return res.json({
       success: true,
-      listings,
+      listings: listingsWithImages,
     });
   } catch (error) {
     console.log(error);
@@ -176,9 +203,12 @@ export const getListing = async (req, res) => {
       });
     }
 
+    // Ensure listing has images (add placeholder if needed)
+    const listingWithImages = ensureListingImages(listing);
+
     return res.json({
       success: true,
-      listing,
+      listing: listingWithImages,
     });
   } catch (error) {
     console.log(error);
