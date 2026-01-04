@@ -1,6 +1,6 @@
 import { Marketplace } from '../models/marketplace.model.js';
 import { User } from '../models/user.model.js';
-import { uploadOnCloudinary } from '../utils/cloudinary.js';
+import cloudinary from '../utils/cloudinary.js';
 
 export const createListing = async (req, res) => {
   try {
@@ -14,13 +14,21 @@ export const createListing = async (req, res) => {
       });
     }
 
-    // Handle image upload
+    // Handle image upload - convert buffers to data URIs and upload to cloudinary
     let images = [];
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
-        const cloudResponse = await uploadOnCloudinary(file.path);
-        if (cloudResponse) {
-          images.push(cloudResponse.secure_url);
+        try {
+          // Convert buffer to base64 data URI
+          const fileUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+          const cloudResponse = await cloudinary.uploader.upload(fileUri, {
+            resource_type: 'auto',
+          });
+          if (cloudResponse && cloudResponse.secure_url) {
+            images.push(cloudResponse.secure_url);
+          }
+        } catch (err) {
+          console.error('Error uploading image:', err);
         }
       }
     }
@@ -148,7 +156,7 @@ export const updateListing = async (req, res) => {
   try {
     const userId = req.id;
     const { id } = req.params;
-    const { title, description, category, price, location, isAvailable } = req.body;
+    const { title, description, category, price, location, isAvailable, existingImages } = req.body;
 
     const listing = await Marketplace.findById(id);
 
@@ -172,6 +180,46 @@ export const updateListing = async (req, res) => {
     if (price) listing.price = parseFloat(price);
     if (location) listing.location = location;
     if (typeof isAvailable !== 'undefined') listing.isAvailable = isAvailable;
+
+    // Handle image updates
+    let updatedImages = [];
+    
+    // Keep existing images that weren't removed
+    if (existingImages) {
+      try {
+        updatedImages = JSON.parse(existingImages);
+        console.log('Parsed existing images:', updatedImages);
+      } catch (e) {
+        console.log('Error parsing existingImages:', e);
+        updatedImages = [];
+      }
+    }
+
+    console.log('Files received:', req.files?.length || 0);
+
+    // Upload new images if provided
+    if (req.files && req.files.length > 0) {
+      console.log('Uploading', req.files.length, 'new images');
+      for (const file of req.files) {
+        try {
+          // Convert buffer to base64 data URI
+          const fileUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+          const cloudResponse = await cloudinary.uploader.upload(fileUri, {
+            resource_type: 'auto',
+          });
+          if (cloudResponse && cloudResponse.secure_url) {
+            console.log('Image uploaded successfully:', cloudResponse.secure_url);
+            updatedImages.push(cloudResponse.secure_url);
+          }
+        } catch (err) {
+          console.error('Error uploading image:', err);
+        }
+      }
+    }
+
+    // Limit to 5 images
+    listing.images = updatedImages.slice(0, 5);
+    console.log('Final images count:', listing.images.length);
 
     await listing.save();
     await listing.populate('seller', 'username profilePicture');

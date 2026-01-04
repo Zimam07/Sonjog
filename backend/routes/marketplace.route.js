@@ -17,7 +17,7 @@ router.post('/create', isAuthenticated, upload.array('images', 5), createListing
 router.get('/all', isAuthenticated, getAllListings);
 router.get('/my-listings', isAuthenticated, getMyListings);
 router.get('/:id', isAuthenticated, getListing);
-router.put('/:id', isAuthenticated, updateListing);
+router.put('/:id', isAuthenticated, upload.array('images', 5), updateListing);
 router.put('/:id/mark-sold', isAuthenticated, markAsSold);
 router.delete('/:id', isAuthenticated, deleteListing);
 

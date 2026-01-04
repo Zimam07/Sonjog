@@ -7,6 +7,11 @@ import { Post } from "../models/post.model.js";
 import { Comment } from "../models/comment.model.js";
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../utils/cloudinary.js";
+
+// Lightweight health/ping to warm the service (helps cold-start hosts)
+export const ping = async (_req, res) => {
+    return res.status(200).json({ success: true, message: 'pong', timestamp: Date.now() });
+};
 export const register = async (req, res) => {
     try {
         const { username, email, password } = req.body;
@@ -106,24 +111,8 @@ export const login = async (req, res) => {
 
         const token = await jwt.sign({ userId: user._id }, process.env.SECRET_KEY, { expiresIn: '1d' });
 
-        // populate each post if in the posts array
-        const populatedPosts = await Promise.all(
-            user.posts.map( async (postId) => {
-                try {
-                    const post = await Post.findById(postId);
-                    if (post && post.author && post.author.equals && post.author.equals(user._id)){
-                        return post;
-                    }
-                } catch (e) {
-                    // ignore individual post lookup errors
-                }
-                return null;
-            })
-        );
-
-        // filter out any null entries to avoid frontend render errors
-        const filteredPosts = populatedPosts.filter(Boolean);
-
+        // Return basic user data without populating posts to improve login speed
+        // Posts will be loaded when visiting the profile page
         user = {
             _id: user._id,
             username: user.username,
@@ -132,7 +121,7 @@ export const login = async (req, res) => {
             bio: user.bio,
             followers: user.followers,
             following: user.following,
-            posts: filteredPosts
+            posts: user.posts  // just the IDs, not populated
         };
         // Cookie options: use secure, SameSite='none' in production (for cross-site requests),
         // and a more permissive setting during development for local testing.

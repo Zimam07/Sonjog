@@ -5,12 +5,19 @@ import { X, Upload, Film } from 'lucide-react';
 import { API_URL } from '../lib/config';
 const MEDIA_API = `${API_URL}/media`;
 
-export default function ReelUploader() {
-  const [isOpen, setIsOpen] = useState(false);
+export default function ReelUploader({ open, onOpenChange, hideTrigger = false }) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
+
+  const isControlled = typeof open === 'boolean';
+  const isOpen = isControlled ? open : internalOpen;
+  const setOpen = (value) => {
+    if (!isControlled) setInternalOpen(value);
+    onOpenChange?.(value);
+  };
 
   const handleFileSelect = (e) => {
     const selectedFile = e.target.files?.[0];
@@ -37,7 +44,7 @@ export default function ReelUploader() {
         toast.success('Reel uploaded successfully! 🎬');
         setFile(null);
         setPreview(null);
-        setIsOpen(false);
+        setOpen(false);
         try { window.dispatchEvent(new CustomEvent('media:uploaded', { detail: { type: 'reel' } })); } catch(e){}
       }
     } catch (err) {
@@ -49,7 +56,7 @@ export default function ReelUploader() {
   };
 
   const handleClose = () => {
-    setIsOpen(false);
+    setOpen(false);
     setFile(null);
     setPreview(null);
   };
@@ -57,13 +64,15 @@ export default function ReelUploader() {
   return (
     <>
       {/* Open Modal Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="px-6 py-2 bg-gradient-to-r from-sky-500 to-cyan-600 hover:from-sky-400 hover:to-cyan-500 text-white font-semibold rounded-xl transition duration-200 shadow-lg flex items-center gap-2 mb-6"
-      >
-        <Film size={20} />
-        Upload Reel
-      </button>
+      {!hideTrigger && (
+        <button
+          onClick={() => setOpen(true)}
+          className="px-6 py-2 bg-gradient-to-r from-sky-500 to-cyan-600 hover:from-sky-400 hover:to-cyan-500 text-white font-semibold rounded-xl transition duration-200 shadow-lg flex items-center gap-2 mb-6"
+        >
+          <Film size={20} />
+          Upload Reel
+        </button>
+      )}
 
       {/* Modal Background */}
       {isOpen && (

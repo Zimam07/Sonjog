@@ -11,6 +11,7 @@ import Signup from './components/Signup'
 import DiagnosticsPage from './components/DiagnosticsPage'
 import Marketplace from './components/Marketplace'
 import MarketplaceItemDetail from './components/MarketplaceItemDetail'
+import MarketplaceEdit from './components/MarketplaceEdit'
 import Saved from './components/Saved'
 import { io } from "socket.io-client";
 import Notifications from './components/Notifications'
@@ -65,6 +66,10 @@ const browserRouter = createBrowserRouter([
       {
         path: '/marketplace/:id',
         element: <ProtectedRoutes><MarketplaceItemDetail /></ProtectedRoutes>
+      },
+      {
+        path: '/marketplace/edit/:id',
+        element: <ProtectedRoutes><MarketplaceEdit /></ProtectedRoutes>
       },
       {
         path: '/saved',

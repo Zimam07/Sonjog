@@ -29,6 +29,21 @@ export default function Home() {
   const [loadingFollowers, setLoadingFollowers] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [editPost, setEditPost] = useState(null); // { id, caption }
+  const [chooserOpen, setChooserOpen] = useState(false);
+  const [storyModalOpen, setStoryModalOpen] = useState(false);
+  const [reelModalOpen, setReelModalOpen] = useState(false);
+
+  const openStoryFlow = () => {
+    setChooserOpen(false);
+    setStoryModalOpen(true);
+  };
+
+  const openReelFlow = () => {
+    setChooserOpen(false);
+    setReelModalOpen(true);
+  };
+
+  const profileImage = (user && user.profilePicture) || 'https://via.placeholder.com/300x500?text=Your+Story';
 
   const goToProfile = (authorId) => {
     if (authorId) navigate(`/profile/${authorId}`);
@@ -306,9 +321,38 @@ export default function Home() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
-      <StoryViewer />
-      <StoryUploader />
-      <ReelUploader />
+      {chooserOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">What do you want to upload?</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Choose how you want to share.</p>
+            <div className="mt-6 grid gap-3">
+              <button
+                onClick={openStoryFlow}
+                className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-sky-600 to-sky-500 text-white font-semibold hover:from-sky-500 hover:to-sky-400 transition"
+              >
+                Upload a Story
+              </button>
+              <button
+                onClick={openReelFlow}
+                className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold hover:from-indigo-400 hover:to-cyan-400 transition"
+              >
+                Upload a Reel
+              </button>
+            </div>
+            <button
+              onClick={() => setChooserOpen(false)}
+              className="w-full mt-4 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      <StoryUploader open={storyModalOpen} onOpenChange={setStoryModalOpen} hideTrigger />
+      <ReelUploader open={reelModalOpen} onOpenChange={setReelModalOpen} hideTrigger />
+      <StoryViewer onCreate={() => setChooserOpen(true)} createImage={profileImage} />
       <ReelGrid />
 
       <div className="space-y-6">

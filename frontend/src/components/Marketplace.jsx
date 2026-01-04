@@ -269,13 +269,17 @@ export default function Marketplace() {
                   className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition group cursor-pointer"
                 >
                   {/* Image */}
-                  {listing.images && listing.images.length > 0 && (
+                  {listing.images && listing.images.length > 0 ? (
                     <div className="aspect-video bg-gray-200 dark:bg-gray-800 overflow-hidden">
                       <img
                         src={listing.images[0]}
                         alt={listing.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                       />
+                    </div>
+                  ) : (
+                    <div className="aspect-video bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+                      <span className="text-gray-400 dark:text-gray-500">No image</span>
                     </div>
                   )}
 
@@ -358,12 +362,16 @@ export default function Marketplace() {
                 key={listing._id}
                 className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex gap-4"
               >
-                {listing.images && listing.images.length > 0 && (
+                {listing.images && listing.images.length > 0 ? (
                   <img
                     src={listing.images[0]}
                     alt={listing.title}
                     className="w-32 h-32 object-cover rounded-lg"
                   />
+                ) : (
+                  <div className="w-32 h-32 bg-gray-200 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                    <span className="text-gray-400 dark:text-gray-500 text-sm">No image</span>
+                  </div>
                 )}
                 <div className="flex-1">
                   <div className="flex items-start justify-between">

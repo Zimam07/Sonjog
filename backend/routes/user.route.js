@@ -16,6 +16,7 @@ import {
     changePassword,
     changeEmail,
     deleteAccount,
+    ping,
 } from "../controllers/user.controller.js";
 import { resendVerification } from '../controllers/verify.controller.js';
 import isAuthenticated from "../middlewares/isAuthenticated.js";
@@ -24,6 +25,7 @@ import { upload } from "../middlewares/multer.js";
 const router = express.Router();
 
 router.route('/register').post(register);
+router.route('/ping').get(ping);
 router.route('/login').post(login);
 router.route('/logout').get(logout);
 router.route('/me').get(isAuthenticated, getMe);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setAuthUser } from '../redux/authSlice';
@@ -10,10 +10,27 @@ export default function Login() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
+  const [warming, setWarming] = useState(true);
   const [input, setInput] = useState({
     email: '',
     password: '',
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    const pingBackend = async () => {
+      try {
+        const USER_API = `${API_URL}/user`;
+        await axios.get(`${USER_API}/ping`, { timeout: 12000, withCredentials: true });
+      } catch (err) {
+        console.log('Warmup ping failed (expected on cold start):', err?.message || err);
+      } finally {
+        if (!cancelled) setWarming(false);
+      }
+    };
+    pingBackend();
+    return () => { cancelled = true; };
+  }, []);
 
   const changeEventHandler = (e) => {
     setInput({ ...input, [e.target.name]: e.target.value });
@@ -29,6 +46,7 @@ export default function Login() {
           'Content-Type': 'application/json',
         },
         withCredentials: true,
+        timeout: 20000,
       });
 
       if (res.data.success) {
@@ -73,6 +91,12 @@ export default function Login() {
         <div className="mb-5 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-xs text-blue-800"><strong>New user?</strong> You must sign up first with a BRACU email (@bracu.ac.bd or @g.bracu.ac.bd)</p>
         </div>
+
+        {warming && (
+          <div className="mb-4 p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+            Warming up the server... this can take a few seconds on first load.
+          </div>
+        )}
 
         <form onSubmit={loginHandler} className="space-y-5">
           <div>

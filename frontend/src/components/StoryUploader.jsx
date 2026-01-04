@@ -5,14 +5,21 @@ import { X, Upload, Image, Play } from 'lucide-react';
 import { API_URL } from '../lib/config';
 const MEDIA_API = `${API_URL}/media`;
 
-export default function StoryUploader() {
-  const [isOpen, setIsOpen] = useState(false);
+export default function StoryUploader({ open, onOpenChange, hideTrigger = false }) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [schedule, setSchedule] = useState(false);
   const [scheduledAt, setScheduledAt] = useState('');
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
+
+  const isControlled = typeof open === 'boolean';
+  const isOpen = isControlled ? open : internalOpen;
+  const setOpen = (value) => {
+    if (!isControlled) setInternalOpen(value);
+    onOpenChange?.(value);
+  };
 
   const handleFileSelect = (e) => {
     const selectedFile = e.target.files?.[0];
@@ -39,7 +46,7 @@ export default function StoryUploader() {
         toast.success('Story uploaded successfully! 🎉');
         setFile(null);
         setPreview(null);
-        setIsOpen(false);
+        setOpen(false);
         // notify other components to refresh
         try { window.dispatchEvent(new CustomEvent('media:uploaded', { detail: { type: 'story' } })); } catch(e){}
       }
@@ -52,7 +59,7 @@ export default function StoryUploader() {
   };
 
   const handleClose = () => {
-    setIsOpen(false);
+    setOpen(false);
     setFile(null);
     setPreview(null);
   };
@@ -79,13 +86,15 @@ export default function StoryUploader() {
   return (
     <>
       {/* Open Modal Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="px-6 py-2 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 text-white font-semibold rounded-xl transition duration-200 shadow-lg flex items-center gap-2 mb-6"
-      >
-        <Upload size={20} />
-        Upload Story
-      </button>
+      {!hideTrigger && (
+        <button
+          onClick={() => setOpen(true)}
+          className="px-6 py-2 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 text-white font-semibold rounded-xl transition duration-200 shadow-lg flex items-center gap-2 mb-6"
+        >
+          <Upload size={20} />
+          Upload Story
+        </button>
+      )}
 
       {/* Modal Background */}
       {isOpen && (
