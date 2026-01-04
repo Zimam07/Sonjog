@@ -47,6 +47,8 @@ export default function Marketplace() {
       });
 
       if (res.data.success) {
+        console.log('Fetched listings:', res.data.listings);
+        console.log('Sample listing images:', res.data.listings[0]?.images);
         setListings(res.data.listings);
       }
     } catch (error) {

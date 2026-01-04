@@ -12,6 +12,7 @@ import mediaRoute from "./routes/media.route.js";
 import draftRoute from "./routes/draft.route.js";
 import groupRoute from "./routes/group.route.js";
 import marketplaceRoute from "./routes/marketplace.route.js";
+import fixRoute from "./routes/fix.route.js";
 import http from "http";
 import { initSocket } from "./socket/socket.js";
 import { publishScheduledStories } from './controllers/story.controller.js';
@@ -68,6 +69,7 @@ app.use("/api/v1/media", mediaRoute);
 app.use("/api/v1/draft", draftRoute);
 app.use("/api/v1/group", groupRoute);
 app.use("/api/v1/marketplace", marketplaceRoute);
+app.use("/api/v1/fix", fixRoute);
 
 const PORT = process.env.PORT || 8000;
 
