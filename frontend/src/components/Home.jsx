@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import { Heart, MessageCircle, Bookmark, Send, MoreVertical } from 'lucide-react';
 import StoryViewer from './StoryViewer';
 import StoryUploader from './StoryUploader';
-import ReelGrid from './ReelGrid';
 import ReelUploader from './ReelUploader';
 import parseCaptionToElements from '../lib/parseCaptionToElements.jsx';
 import { API_URL } from '../lib/config';
@@ -353,7 +352,6 @@ export default function Home() {
       <StoryUploader open={storyModalOpen} onOpenChange={setStoryModalOpen} hideTrigger />
       <ReelUploader open={reelModalOpen} onOpenChange={setReelModalOpen} hideTrigger />
       <StoryViewer onCreate={() => setChooserOpen(true)} createImage={profileImage} />
-      <ReelGrid />
 
       <div className="space-y-6">
         {posts.length === 0 ? (

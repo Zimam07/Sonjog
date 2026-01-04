@@ -1,35 +1,54 @@
 import { useEffect, useState, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import axios from 'axios';
+import { toast } from 'sonner';
 import StoryModal from './StoryModal';
+import ReelModal from './ReelModal';
 import { API_URL } from '../lib/config';
+import { Trash2 } from 'lucide-react';
 const MEDIA_API = `${API_URL}/media`;
 
-// Horizontal strip of stories with an optional leading "Create" card.
+// Horizontal strip of stories and reels with an optional leading "Create" card.
 export default function StoryViewer({ onCreate, createImage }) {
+  const { user } = useSelector((state) => state.auth);
   const [stories, setStories] = useState([]);
+  const [reels, setReels] = useState([]);
+  const [combinedMedia, setCombinedMedia] = useState([]);
   const [index, setIndex] = useState(0);
-  const [showModal, setShowModal] = useState(false);
+  const [showStoryModal, setShowStoryModal] = useState(false);
+  const [showReelModal, setShowReelModal] = useState(false);
   const [selectedStoryIndex, setSelectedStoryIndex] = useState(0);
+  const [selectedReelIndex, setSelectedReelIndex] = useState(0);
   const timerRef = useRef(null);
 
   useEffect(() => {
     fetchStories();
+    fetchReels();
     const handler = (e) => {
-      // refresh when new story uploaded
+      // refresh when new story or reel uploaded
       if (!e?.detail || e.detail.type === 'story') fetchStories();
+      if (!e?.detail || e.detail.type === 'reel') fetchReels();
     };
     window.addEventListener('media:uploaded', handler);
     return () => window.removeEventListener('media:uploaded', handler);
   }, []);
 
   useEffect(() => {
-    if (stories.length === 0) return;
+    // Combine stories and reels, sorted by creation date
+    const combined = [...stories, ...reels].sort((a, b) => 
+      new Date(b.createdAt) - new Date(a.createdAt)
+    );
+    setCombinedMedia(combined);
+  }, [stories, reels]);
+
+  useEffect(() => {
+    if (combinedMedia.length === 0) return;
     clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
-      setIndex((i) => (i + 1) % stories.length);
+      setIndex((i) => (i + 1) % combinedMedia.length);
     }, 4000);
     return () => clearInterval(timerRef.current);
-  }, [stories]);
+  }, [combinedMedia]);
 
   const fetchStories = async () => {
     try {
@@ -43,8 +62,30 @@ export default function StoryViewer({ onCreate, createImage }) {
           author: st.author,
           createdAt: st.createdAt,
           publishedAt: st.publishedAt,
+          type: 'story'
         }));
         setStories(normalized);
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  const fetchReels = async () => {
+    try {
+      const res = await axios.get(`${MEDIA_API}/reel/all`, { withCredentials: true });
+      if (res.data.success) {
+        // normalize to use r.url for frontend
+        const normalized = (res.data.reels || []).map((r) => ({
+          _id: r._id,
+          mediaUrl: r.videoUrl || r.url,
+          mediaType: 'video',
+          caption: r.caption || r.captionText || '',
+          author: r.author,
+          createdAt: r.createdAt,
+          type: 'reel'
+        }));
+        setReels(normalized);
       }
     } catch (e) {
       console.log(e);
@@ -55,9 +96,18 @@ export default function StoryViewer({ onCreate, createImage }) {
     setStories((prev) => prev.filter((s) => s._id !== storyId));
   };
 
-  const openModal = (idx) => {
+  const handleReelDeleted = (reelId) => {
+    setReels((prev) => prev.filter((r) => r._id !== reelId));
+  };
+
+  const openStoryModal = (idx) => {
     setSelectedStoryIndex(idx);
-    setShowModal(true);
+    setShowStoryModal(true);
+  };
+
+  const openReelModal = (idx) => {
+    setSelectedReelIndex(idx);
+    setShowReelModal(true);
   };
 
   return (
@@ -81,38 +131,58 @@ export default function StoryViewer({ onCreate, createImage }) {
             </div>
           </button>
 
-          {/* Other stories */}
-          {stories.length === 0 ? (
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-300 px-2">No stories yet</div>
+          {/* Stories and Reels combined */}
+          {combinedMedia.length === 0 ? (
+            <div className="flex items-center text-sm text-gray-600 dark:text-gray-300 px-2">No stories or reels yet</div>
           ) : (
-            stories.map((s, idx) => (
+            combinedMedia.map((item, idx) => (
               <div
-                key={s._id}
+                key={item._id}
                 className={`relative min-w-[120px] h-48 rounded-xl overflow-hidden shadow-md border flex-shrink-0 cursor-pointer transition hover:scale-105 ${idx === index ? 'border-sky-500' : 'border-gray-200 dark:border-gray-700'}`}
-                onClick={() => openModal(idx)}
+                onClick={() => {
+                  if (item.type === 'story') {
+                    openStoryModal(stories.findIndex(s => s._id === item._id));
+                  } else if (item.type === 'reel') {
+                    openReelModal(reels.findIndex(r => r._id === item._id));
+                  }
+                }}
               >
-                {s.mediaType === 'image' ? (
-                  <img src={s.mediaUrl} alt="story" className="absolute inset-0 w-full h-full object-cover" />
+                {item.mediaType === 'image' ? (
+                  <img src={item.mediaUrl} alt="story" className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
-                  <video src={s.mediaUrl} className="absolute inset-0 w-full h-full object-cover" />
+                  <video src={item.mediaUrl} className="absolute inset-0 w-full h-full object-cover" muted />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                 <div className="absolute top-2 left-2 w-10 h-10 rounded-full ring-2 ring-white overflow-hidden">
-                  <img src={s.author?.profilePicture || 'https://via.placeholder.com/40'} alt={s.author?.username} className="w-full h-full object-cover" />
+                  <img src={item.author?.profilePicture || 'https://via.placeholder.com/40'} alt={item.author?.username} className="w-full h-full object-cover" />
                 </div>
-                <div className="absolute bottom-2 left-2 right-2 text-white text-sm font-semibold line-clamp-1 drop-shadow">{s.author?.username || 'Story'}</div>
+                <div className="absolute bottom-2 left-2 right-2">
+                  <div className="text-white text-sm font-semibold line-clamp-1 drop-shadow">{item.author?.username || 'User'}</div>
+                  {item.type === 'reel' && (
+                    <div className="text-white text-xs opacity-80 drop-shadow">Reel</div>
+                  )}
+                </div>
               </div>
             ))
           )}
         </div>
       </div>
 
-      {showModal && (
+      {showStoryModal && (
         <StoryModal
           stories={stories}
           initialIndex={selectedStoryIndex}
-          onClose={() => setShowModal(false)}
+          onClose={() => setShowStoryModal(false)}
           onStoryDeleted={handleStoryDeleted}
+        />
+      )}
+
+      {showReelModal && (
+        <ReelModal
+          reels={reels}
+          initialIndex={selectedReelIndex}
+          onClose={() => setShowReelModal(false)}
+          onReelDeleted={handleReelDeleted}
         />
       )}
     </>

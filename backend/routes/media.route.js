@@ -2,7 +2,7 @@ import express from 'express';
 import isAuthenticated from '../middlewares/isAuthenticated.js';
 import { upload } from '../middlewares/multer.js';
 import { addStory, getStories, getScheduledStories, cancelScheduledStory, updateScheduledStory, deleteStory } from '../controllers/story.controller.js';
-import { addReel, getAllReels } from '../controllers/reel.controller.js';
+import { addReel, getAllReels, deleteReel } from '../controllers/reel.controller.js';
 
 const router = express.Router();
 
@@ -28,5 +28,6 @@ router.route('/story/publish-now').post(isAuthenticated, async (req, res) => {
 // Reels endpoints
 router.route('/reel').post(isAuthenticated, upload.single('media'), addReel);
 router.route('/reel/all').get(isAuthenticated, getAllReels);
+router.route('/reel/:id').delete(isAuthenticated, deleteReel);
 
 export default router;

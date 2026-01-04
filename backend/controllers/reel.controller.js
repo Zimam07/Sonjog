@@ -39,3 +39,33 @@ export const getAllReels = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const deleteReel = async (req, res) => {
+  try {
+    const reelId = req.params.id;
+    const authorId = req.id;
+
+    console.log('Delete reel request:', { reelId, authorId });
+
+    const reel = await Reel.findById(reelId);
+    if (!reel) {
+      console.log('Reel not found:', reelId);
+      return res.status(404).json({ success: false, message: 'Reel not found' });
+    }
+
+    console.log('Reel found:', { reelAuthor: reel.author.toString(), requestAuthor: authorId });
+
+    // Check if the user is the author of the reel
+    if (reel.author.toString() !== authorId) {
+      console.log('Unauthorized delete attempt');
+      return res.status(403).json({ success: false, message: 'Unauthorized to delete this reel' });
+    }
+
+    await Reel.findByIdAndDelete(reelId);
+    console.log('Reel deleted successfully:', reelId);
+    return res.status(200).json({ success: true, message: 'Reel deleted successfully' });
+  } catch (error) {
+    console.log('Delete reel error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
